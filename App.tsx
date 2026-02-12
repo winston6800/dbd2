@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Layout from './components/Layout';
 import { AppScreen, Achievement, UserState, UserStats } from './types';
 import { verifyDashboardScreenshot } from './services/geminiService';
-import { Trophy, Zap, AlertCircle, RefreshCw, X, Flame, Calendar, Award, Clock, ShieldCheck, Target, Camera, Loader2, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, Briefcase, History, Check, Quote, Star, Filter, MousePointer2, Globe, Activity, ZapOff, ChevronRight, Skull, User, Coffee, Moon, ArrowUp } from 'lucide-react';
+import { Trophy, Zap, AlertCircle, RefreshCw, X, Flame, Calendar, Award, Clock, ShieldCheck, Target, Camera, Loader2, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, Briefcase, History, Check, Quote, Star, Filter, MousePointer2, Globe, Activity, ZapOff, ChevronRight, Skull, User, Coffee, Moon, ArrowUp, ExternalLink, Edit3, Link as LinkIcon } from 'lucide-react';
 
 const calculateCurrentStreak = (growthDates: string[], infrastructureFocus: Record<string, boolean>, dailyShipped: Record<string, boolean>): number => {
   const focusDates = Object.entries(infrastructureFocus)
@@ -92,6 +92,8 @@ const App: React.FC = () => {
     
     return {
       defaultKpi: "Unique Visitors",
+      websiteUrl: "",
+      growthObjective: "INCREASE DAILY UNIQUE VISITORS",
       streak: 0,
       minThreshold: 100,
       history: [],
@@ -161,6 +163,14 @@ const App: React.FC = () => {
     });
   };
 
+  const updateWebsite = (url: string) => {
+    setUserState(prev => ({ ...prev, websiteUrl: url }));
+  };
+
+  const updateGrowthObjective = (objective: string) => {
+    setUserState(prev => ({ ...prev, growthObjective: objective }));
+  };
+
   const simulateData = (daysCount: number) => {
     const datesToAdd: string[] = [];
     const uvsToAdd: Record<string, number> = {};
@@ -171,7 +181,7 @@ const App: React.FC = () => {
     for (let i = 0; i < daysCount; i++) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
-      const dStr = d.toLocaleDateString('en-CA');
+      const dateStr = d.toLocaleDateString('en-CA');
       const rand = Math.random();
       if (rand > 0.3) {
         datesToAdd.push(dStr);
@@ -218,6 +228,8 @@ const App: React.FC = () => {
             userState={userState} 
             onUpdateLoops={updateDailyLoops}
             onSetHonorVow={handleSetHonorVow}
+            onUpdateWebsite={updateWebsite}
+            onUpdateObjective={updateGrowthObjective}
             onToggleInfra={(active) => {
               const today = new Date().toLocaleDateString('en-CA');
               setUserState(p => ({ 
@@ -267,10 +279,16 @@ const BaseHub: React.FC<{
   userState: UserState, 
   onUpdateLoops: (delta: number) => void,
   onSetHonorVow: (shipped: boolean) => void,
+  onUpdateWebsite: (url: string) => void,
+  onUpdateObjective: (obj: string) => void,
   onToggleInfra: (active: boolean) => void
-}> = ({ userState, onUpdateLoops, onSetHonorVow, onToggleInfra }) => {
+}> = ({ userState, onUpdateLoops, onSetHonorVow, onUpdateWebsite, onUpdateObjective, onToggleInfra }) => {
   const [showLogConfirm, setShowLogConfirm] = useState(false);
   const [showBreakConfirm, setShowBreakConfirm] = useState(false);
+  const [isEditingWebsite, setIsEditingWebsite] = useState(false);
+  const [isEditingObjective, setIsEditingObjective] = useState(false);
+  const [tempWebsite, setTempWebsite] = useState(userState.websiteUrl || '');
+  const [tempObjective, setTempObjective] = useState(userState.growthObjective || 'INCREASE DAILY UNIQUE VISITORS');
 
   const todayStr = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
   const todayLoops = userState.dailyUvs[todayStr] || 0;
@@ -294,6 +312,18 @@ const BaseHub: React.FC<{
     }
     return days;
   }, [userState.dailyUvs, userState.dailyInfrastructureFocus, userState.dailyShipped, todayStr]);
+
+  const saveWebsite = () => {
+    onUpdateWebsite(tempWebsite);
+    setIsEditingWebsite(false);
+  };
+
+  const saveObjective = () => {
+    const finalObj = tempObjective.trim() || 'INCREASE DAILY UNIQUE VISITORS';
+    onUpdateObjective(finalObj.toUpperCase());
+    setTempObjective(finalObj.toUpperCase());
+    setIsEditingObjective(false);
+  };
 
   return (
     <div className="space-y-6 pb-20 animate-in fade-in duration-500">
@@ -333,7 +363,7 @@ const BaseHub: React.FC<{
         </div>
       </div>
 
-      <div className={`p-6 rounded-3xl border transition-all duration-500 flex flex-col items-center justify-center text-center ${
+      <div className={`p-6 rounded-3xl border transition-all duration-500 flex flex-col items-center justify-center text-center relative ${
         userState.isOnMaintenance ? 'bg-indigo-950/40 border-indigo-500/50 shadow-[0_0_30px_rgba(49,46,129,0.3)]' : 'bg-brand/5 border-brand/20'
       }`}>
         <div className="flex items-center space-x-2 mb-2">
@@ -342,9 +372,64 @@ const BaseHub: React.FC<{
             {userState.isOnMaintenance ? 'Active Recovery' : 'Growth Objective'}
           </span>
         </div>
-        <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white">
-          {userState.isOnMaintenance ? 'Break Day' : 'Surpass Volume Goal'}
-        </h2>
+        
+        <div className="w-full mb-2">
+          {isEditingObjective && !userState.isOnMaintenance ? (
+            <input 
+              autoFocus
+              className="w-full bg-transparent border-none outline-none text-2xl font-black italic tracking-tighter uppercase text-brand text-center leading-tight animate-in zoom-in-95"
+              value={tempObjective}
+              onChange={(e) => setTempObjective(e.target.value)}
+              onBlur={saveObjective}
+              onKeyDown={(e) => e.key === 'Enter' && saveObjective()}
+            />
+          ) : (
+            <h2 
+              onClick={() => !userState.isOnMaintenance && setIsEditingObjective(true)}
+              className={`text-2xl font-black italic tracking-tighter uppercase text-white leading-tight ${!userState.isOnMaintenance ? 'cursor-pointer hover:text-brand transition-colors select-none' : ''}`}
+            >
+              {userState.isOnMaintenance ? 'Break Day' : (userState.growthObjective || 'INCREASE DAILY UNIQUE VISITORS')}
+            </h2>
+          )}
+        </div>
+
+        <div className="w-full px-4">
+          {isEditingWebsite ? (
+            <div className="flex items-center space-x-2 bg-black/60 p-1.5 rounded-2xl border border-white/10 w-full animate-in slide-in-from-top-2">
+              <input 
+                autoFocus
+                type="text" 
+                value={tempWebsite} 
+                onChange={(e) => setTempWebsite(e.target.value)}
+                onBlur={saveWebsite}
+                onKeyDown={(e) => e.key === 'Enter' && saveWebsite()}
+                placeholder="yourwebsite.com"
+                className="flex-1 bg-transparent border-none outline-none text-[10px] font-bold text-white px-3 placeholder:text-gray-700"
+              />
+              <button onClick={saveWebsite} className="p-2 bg-brand/20 text-brand rounded-xl hover:bg-brand/40 transition-colors">
+                <Check size={14} strokeWidth={3} />
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={() => setIsEditingWebsite(true)}
+              className="group flex items-center justify-center space-x-2 py-1.5 px-4 rounded-full bg-white/5 border border-white/5 hover:border-brand/40 hover:bg-brand/5 transition-all w-full max-w-[200px] mx-auto overflow-hidden"
+            >
+              {userState.websiteUrl ? (
+                <>
+                  <Globe size={10} className="text-brand/60 group-hover:text-brand" />
+                  <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest truncate group-hover:text-white transition-colors">{userState.websiteUrl.replace(/^https?:\/\//, '')}</span>
+                  <Edit3 size={8} className="text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </>
+              ) : (
+                <>
+                  <Plus size={10} className="text-brand/60" />
+                  <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Add Website</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className={`bg-gradient-to-br from-dark-accent to-black p-6 rounded-[32px] text-center space-y-6 border border-brand/20 shadow-2xl transition-all duration-500 ${userState.isOnMaintenance ? 'opacity-40 grayscale pointer-events-none' : ''}`}>

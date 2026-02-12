@@ -25,13 +25,15 @@ export interface UserStats {
 
 export interface UserState {
   defaultKpi: string; // "Unique Visitors"
+  websiteUrl?: string; // User's project website
+  growthObjective?: string; // New: Customizable growth objective text
   streak: number;
   history: { date: string; value: number }[];
   growthDates: string[];
   dailyUvs: Record<string, number>;
   dailyGrowthActions: Record<string, number>;
   dailyInfrastructureFocus: Record<string, boolean>;
-  dailyShipped: Record<string, boolean>; // New: Track honor code checkmarks
+  dailyShipped: Record<string, boolean>; // Track honor code checkmarks
   stats: UserStats;
   achievements: Achievement[];
   currentUvs: number;
