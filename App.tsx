@@ -2,40 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Layout from './components/Layout';
 import { AppScreen, UserState, UserStats } from './types';
 import { calculateCurrentStreak } from './lib/utils';
-import { getGroups, getUserState, saveUserState, saveGroups, decodeGroupFromUrl, updateGroup, getDisplayName, setDisplayName, getFollowing, addFollowed, updateFollowed, decodeFollowProfileFromUrl, getFollowMeLink, getChallenges, getChallengeProgress } from './lib/storage';
+import { getGroups, getUserState, saveUserState, saveGroups, decodeGroupFromUrl, updateGroup, getDisplayName, setDisplayName, getFollowing, addFollowed, updateFollowed, decodeFollowProfileFromUrl, getFollowMeLink } from './lib/storage';
 import { GroupsScreen } from './components/GroupsScreen';
-import { FeedScreen } from './components/FeedScreen';
+import { FeedSection } from './components/FeedScreen';
 import { DiscoveryScreen } from './components/DiscoveryScreen';
-import { RefreshCw, X, Flame, Calendar, Award, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, User, Coffee, Moon, ArrowUp, Edit3, Globe, Zap, UserPlus, Copy, Trophy } from 'lucide-react';
-
-const ChallengesBlock: React.FC<{ userState: UserState }> = ({ userState }) => {
-  const challenges = getChallenges();
-  return (
-    <div className="bg-dark-card border border-white/10 rounded-3xl p-5 space-y-4">
-      <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center space-x-2">
-        <Trophy size={12} />
-        <span>Weekly Challenges</span>
-      </h3>
-      <div className="space-y-3">
-        {challenges.map(ch => {
-          const progress = getChallengeProgress(ch, userState);
-          const done = progress >= ch.target;
-          return (
-            <div key={ch.id} className={`p-3 rounded-2xl border ${done ? 'bg-brand/10 border-brand/30' : 'bg-black/40 border-white/5'}`}>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-sm font-bold text-white">{ch.name}</span>
-                <span className={`text-[10px] font-black ${done ? 'text-brand' : 'text-gray-500'}`}>{progress}/{ch.target}</span>
-              </div>
-              <div className="w-full h-1.5 bg-black rounded-full overflow-hidden">
-                <div className={`h-full transition-all duration-500 ${done ? 'bg-brand' : 'bg-gray-700'}`} style={{ width: `${Math.min(100, (progress / ch.target) * 100)}%` }} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
+import { RefreshCw, X, Flame, Calendar, Award, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, User, Coffee, Moon, ArrowUp, Edit3, Globe, Zap, UserPlus, Copy } from 'lucide-react';
 
 const getHeatmapColor = (uvs: number, isFocus?: boolean, isShipped?: boolean) => {
   if (isFocus) return { backgroundColor: 'rgb(49, 46, 129)', border: '1px solid rgba(79, 70, 229, 0.4)', color: '#fff' };
@@ -84,7 +55,7 @@ const FrequencyMap: React.FC<{ data: { date: string, uvs: number, isFocus: boole
 );
 
 const App: React.FC = () => {
-  const [screen, setScreen] = useState<AppScreen>(AppScreen.BASE);
+  const [screen, setScreen] = useState<AppScreen>(AppScreen.HOME);
   const [devMenuOpen, setDevMenuOpen] = useState(false);
   const [userState, setUserState] = useState<UserState>(getUserState);
   const [groups, setGroups] = useState(() => getGroups());
@@ -254,9 +225,12 @@ const App: React.FC = () => {
   return (
     <Layout activeScreen={screen} onNavigate={setScreen}>
       <div className="relative min-h-full">
-        {screen === AppScreen.BASE && (
+        {screen === AppScreen.HOME && (
           <BaseHub 
             userState={userState} 
+            following={following}
+            groups={groups}
+            currentUserName={getDisplayName()}
             onUpdateLoops={updateDailyLoops}
             onSetHonorVow={handleSetHonorVow}
             onUpdateWebsite={updateWebsite}
@@ -270,13 +244,6 @@ const App: React.FC = () => {
                 streak: calculateCurrentStreak(p.growthDates, { ...p.dailyInfrastructureFocus, [today]: active }, p.dailyShipped)
               }));
             }}
-          />
-        )}
-        {screen === AppScreen.FEED && (
-          <FeedScreen
-            following={following}
-            groups={groups}
-            currentUserName={getDisplayName()}
           />
         )}
         {screen === AppScreen.DISCOVER && (
@@ -297,11 +264,8 @@ const App: React.FC = () => {
             currentUserState={userState}
           />
         )}
-        {screen === AppScreen.ACHIEVEMENTS && (
-          <AchievementsDashboard userState={userState} />
-        )}
-        {screen === AppScreen.PROFILE && (
-          <ProfileScreen userState={userState} />
+        {screen === AppScreen.YOU && (
+          <YouScreen userState={userState} />
         )}
 
         {joinModal && (
@@ -405,13 +369,16 @@ const App: React.FC = () => {
 };
 
 const BaseHub: React.FC<{ 
-  userState: UserState, 
-  onUpdateLoops: (delta: number) => void,
-  onSetHonorVow: (shipped: boolean, note?: string) => void,
-  onUpdateWebsite: (url: string) => void,
-  onUpdateObjective: (obj: string) => void,
-  onToggleInfra: (active: boolean) => void
-}> = ({ userState, onUpdateLoops, onSetHonorVow, onUpdateWebsite, onUpdateObjective, onToggleInfra }) => {
+  userState: UserState;
+  following: Record<string, import('./types').FollowedPerson>;
+  groups: Record<string, import('./types').Group>;
+  currentUserName: string;
+  onUpdateLoops: (delta: number) => void;
+  onSetHonorVow: (shipped: boolean, note?: string) => void;
+  onUpdateWebsite: (url: string) => void;
+  onUpdateObjective: (obj: string) => void;
+  onToggleInfra: (active: boolean) => void;
+}> = ({ userState, following, groups, currentUserName, onUpdateLoops, onSetHonorVow, onUpdateWebsite, onUpdateObjective, onToggleInfra }) => {
   const [showLogConfirm, setShowLogConfirm] = useState(false);
   const [shipNote, setShipNote] = useState('');
   const [showBreakConfirm, setShowBreakConfirm] = useState(false);
@@ -607,13 +574,16 @@ const BaseHub: React.FC<{
         </div>
       </div>
 
-      <ChallengesBlock userState={userState} />
-
       <div className="flex justify-center pt-2">
         <button onClick={() => setShowBreakConfirm(true)} className={`px-8 py-3 rounded-full border text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center space-x-2 shadow-2xl ${userState.isOnMaintenance ? 'bg-indigo-900 border-indigo-700 text-white' : 'bg-white/5 border-white/10 text-gray-500 hover:text-indigo-400/80'}`}>
           {userState.isOnMaintenance ? <Coffee size={14} /> : <Moon size={14} />}
           <span>{userState.isOnMaintenance ? 'End Break' : 'Take a Break'}</span>
         </button>
+      </div>
+
+      <div>
+        <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Activity</h3>
+        <FeedSection following={following} groups={groups} currentUserName={currentUserName} compact />
       </div>
 
       {showLogConfirm && (
@@ -690,48 +660,7 @@ const BaseHub: React.FC<{
   );
 };
 
-const AchievementsDashboard: React.FC<{ userState: UserState }> = ({ userState }) => {
-  const stats = userState.stats;
-
-  return (
-    <div className="space-y-8 pb-20 animate-in slide-in-from-bottom-4">
-      <div className="flex flex-col">
-        <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase">Acquisition Stats</h2>
-        <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Growth Velocity Metrics</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <StatCard icon={<Globe className="text-brand" size={18} />} label="Total Units" value={stats.totalUniqueVisitors.toLocaleString()} desc="Lifetime Traffic" />
-        <StatCard icon={<Flame className="text-brand" size={18} />} label="Streak" value={userState.streak} desc="Active Survival" />
-        <StatCard icon={<Target className="text-brand" size={18} />} label="Avg Daily" value={stats.avgUvPerDay} desc="Acq Velocity" />
-        <StatCard icon={<TrendingUp className="text-brand" size={18} />} label="Conv Rate" value={`${stats.conversionResilience}%`} desc="Efficiency" />
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="text-brand font-black text-xs uppercase px-1 tracking-widest flex items-center space-x-2">
-          <Award size={14} />
-          <span>Survival Milestones</span>
-        </h3>
-        <div className="space-y-3">
-          {userState.achievements.map(ach => (
-            <div key={ach.id} className={`p-5 rounded-3xl border transition-all ${ach.unlocked ? 'bg-dark-card border-brand/40 shadow-xl' : 'bg-black border-white/5 opacity-50'}`}>
-              <div className="flex items-center space-x-4">
-                <div className={`text-3xl w-14 h-14 flex items-center justify-center rounded-2xl bg-black border ${ach.unlocked ? 'border-brand shadow-md' : 'border-gray-800'}`}>{ach.icon}</div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-center mb-1"><h4 className="font-black text-white uppercase text-sm italic">{ach.title}</h4><span className="text-[10px] font-bold text-brand/80">{ach.progress}/{ach.target}</span></div>
-                  <p className="text-[10px] text-gray-500 font-medium mb-3">{ach.description}</p>
-                  <div className="w-full h-1 bg-black rounded-full overflow-hidden border border-white/5"><div className={`h-full transition-all duration-1000 ${ach.unlocked ? 'bg-brand' : 'bg-gray-800'}`} style={{ width: `${Math.min(100, (ach.progress / ach.target) * 100)}%` }}></div></div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ProfileScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
+const YouScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
   type TimeFrame = 'WEEK' | 'MONTH' | 'YEAR' | 'ALL';
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('MONTH');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -746,13 +675,7 @@ const ProfileScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
       const dateStr = d.toLocaleDateString('en-CA');
-      days.push({ 
-        date: dateStr, 
-        uvs: userState.dailyUvs[dateStr] || 0,
-        isFocus: !!userState.dailyInfrastructureFocus[dateStr],
-        isShipped: !!userState.dailyShipped[dateStr],
-        isToday: dateStr === now.toLocaleDateString('en-CA')
-      });
+      days.push({ date: dateStr, uvs: userState.dailyUvs[dateStr] || 0, isFocus: !!userState.dailyInfrastructureFocus[dateStr], isShipped: !!userState.dailyShipped[dateStr], isToday: dateStr === now.toLocaleDateString('en-CA') });
     }
     return days;
   }, [userState.dailyUvs, userState.dailyInfrastructureFocus, userState.dailyShipped]);
@@ -764,27 +687,16 @@ const ProfileScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
       const dateStr = d.toLocaleDateString('en-CA');
-      days.push({ 
-        date: dateStr, 
-        uvs: userState.dailyUvs[dateStr] || 0,
-        isFocus: !!userState.dailyInfrastructureFocus[dateStr],
-        isShipped: !!userState.dailyShipped[dateStr],
-        isToday: dateStr === now.toLocaleDateString('en-CA')
-      });
+      days.push({ date: dateStr, uvs: userState.dailyUvs[dateStr] || 0, isFocus: !!userState.dailyInfrastructureFocus[dateStr], isShipped: !!userState.dailyShipped[dateStr], isToday: dateStr === now.toLocaleDateString('en-CA') });
     }
     return days;
   }, [userState.dailyUvs, userState.dailyInfrastructureFocus, userState.dailyShipped]);
 
   const yearGroups = useMemo(() => {
     const years: Record<number, { name: string, days: any[] }[]> = {};
-    const merged = Array.from(new Set([
-      ...Object.keys(userState.dailyUvs), 
-      ...Object.keys(userState.dailyInfrastructureFocus),
-      ...Object.keys(userState.dailyShipped)
-    ]));
+    const merged = Array.from(new Set([...Object.keys(userState.dailyUvs), ...Object.keys(userState.dailyInfrastructureFocus), ...Object.keys(userState.dailyShipped)]));
     const startYear = merged.length > 0 ? Math.min(...merged.map(d => new Date(d).getFullYear())) : new Date().getFullYear();
     const endYear = new Date().getFullYear();
-
     for (let y = endYear; y >= startYear; y--) {
       const months = [];
       for (let m = 0; m < 12; m++) {
@@ -793,12 +705,7 @@ const ProfileScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
         const monthName = d.toLocaleDateString('en-US', { month: 'short' });
         while (d.getMonth() === m) {
           const dateStr = d.toLocaleDateString('en-CA');
-          monthDays.push({ 
-            date: dateStr, 
-            uvs: userState.dailyUvs[dateStr] || 0,
-            isFocus: !!userState.dailyInfrastructureFocus[dateStr],
-            isShipped: !!userState.dailyShipped[dateStr]
-          });
+          monthDays.push({ date: dateStr, uvs: userState.dailyUvs[dateStr] || 0, isFocus: !!userState.dailyInfrastructureFocus[dateStr], isShipped: !!userState.dailyShipped[dateStr] });
           d.setDate(d.getDate() + 1);
         }
         months.push({ name: monthName, days: monthDays });
@@ -809,6 +716,7 @@ const ProfileScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
   }, [userState.dailyUvs, userState.dailyInfrastructureFocus, userState.dailyShipped]);
 
   const yearsAvailable = Object.keys(yearGroups).map(Number).sort((a, b) => b - a);
+  const stats = userState.stats;
 
   return (
     <div className="space-y-6 pb-20 animate-in fade-in duration-500">
@@ -818,14 +726,7 @@ const ProfileScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
           <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Display name</p>
           {editingName ? (
             <div className="flex gap-2">
-              <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayNameState(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && (setDisplayName(displayName), setEditingName(false))}
-                className="flex-1 bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-white text-sm font-bold outline-none focus:border-brand/50"
-                autoFocus
-              />
+              <input type="text" value={displayName} onChange={(e) => setDisplayNameState(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (setDisplayName(displayName), setEditingName(false))} className="flex-1 bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-white text-sm font-bold outline-none focus:border-brand/50" autoFocus />
               <button onClick={() => { setDisplayName(displayName); setEditingName(false); }} className="px-4 py-2 bg-brand text-white rounded-xl font-bold">Save</button>
             </div>
           ) : (
@@ -834,46 +735,37 @@ const ProfileScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
         </div>
         <div>
           <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Let people follow you</p>
-          <button
-            onClick={() => {
-              const link = getFollowMeLink(displayName, userState);
-              navigator.clipboard.writeText(link);
-              setFollowLinkCopied(true);
-              setTimeout(() => setFollowLinkCopied(false), 2000);
-            }}
-            className="w-full py-3 rounded-xl bg-brand/20 border border-brand/40 flex items-center justify-center space-x-2 text-brand font-bold hover:bg-brand/30 transition-colors"
-          >
+          <button onClick={() => { const link = getFollowMeLink(displayName, userState); navigator.clipboard.writeText(link); setFollowLinkCopied(true); setTimeout(() => setFollowLinkCopied(false), 2000); }} className="w-full py-3 rounded-xl bg-brand/20 border border-brand/40 flex items-center justify-center space-x-2 text-brand font-bold hover:bg-brand/30 transition-colors">
             {followLinkCopied ? <Check size={16} /> : <Copy size={16} />}
             <span>{followLinkCopied ? 'Copied!' : 'Copy follow link'}</span>
           </button>
           <p className="text-[9px] text-gray-500 mt-1">Share this link so others can follow your progress</p>
         </div>
       </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <StatCard icon={<Globe className="text-brand" size={18} />} label="Total Units" value={stats.totalUniqueVisitors.toLocaleString()} desc="Lifetime Traffic" />
+        <StatCard icon={<Flame className="text-brand" size={18} />} label="Streak" value={userState.streak} desc="Active Survival" />
+        <StatCard icon={<Target className="text-brand" size={18} />} label="Avg Daily" value={stats.avgUvPerDay} desc="Acq Velocity" />
+        <StatCard icon={<TrendingUp className="text-brand" size={18} />} label="Conv Rate" value={`${stats.conversionResilience}%`} desc="Efficiency" />
+      </div>
+
       <div className="flex flex-col">
-        <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">Field Analytics</h2>
+        <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase leading-none">Field Analytics</h2>
         <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mt-1">Consistency & Retention Metrics</p>
       </div>
 
       <div className="flex bg-dark-card border border-white/5 rounded-2xl p-1 shadow-inner">
         {(['WEEK', 'MONTH', 'YEAR', 'ALL'] as TimeFrame[]).map(tf => (
-          <button 
-            key={tf} 
-            onClick={() => setTimeFrame(tf)}
-            className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${timeFrame === tf ? 'bg-brand text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
-          >
-            {tf}
-          </button>
+          <button key={tf} onClick={() => setTimeFrame(tf)} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${timeFrame === tf ? 'bg-brand text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>{tf}</button>
         ))}
       </div>
 
       <div className="bg-dark-card border border-white/5 rounded-[32px] p-6 shadow-2xl space-y-6">
         <div className="flex items-center justify-between">
           <p className="text-[10px] font-black uppercase text-brand/60 tracking-widest">Growth Presence</p>
-          <span className="text-[8px] font-bold text-gray-500 uppercase tracking-tighter">
-            {timeFrame === 'WEEK' ? 'LAST 7 DAYS' : timeFrame === 'MONTH' ? 'CURRENT CYCLE' : timeFrame === 'YEAR' ? `${new Date().getFullYear()} OVERVIEW` : `HISTORICAL: ${selectedYear}`}
-          </span>
+          <span className="text-[8px] font-bold text-gray-500 uppercase tracking-tighter">{timeFrame === 'WEEK' ? 'LAST 7 DAYS' : timeFrame === 'MONTH' ? 'CURRENT CYCLE' : timeFrame === 'YEAR' ? `${new Date().getFullYear()} OVERVIEW` : `HISTORICAL: ${selectedYear}`}</span>
         </div>
-
         {timeFrame === 'ALL' && (
           <div className="flex items-center space-x-2 py-1 overflow-x-auto no-scrollbar mask-fade-edges">
             {yearsAvailable.map(year => (
@@ -881,14 +773,11 @@ const ProfileScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
             ))}
           </div>
         )}
-
         <div className="animate-in fade-in duration-300">
           {timeFrame === 'WEEK' && <FrequencyMap data={weekData} columns={7} />}
           {timeFrame === 'MONTH' && (
             <div className="space-y-4">
-              <div className="grid grid-cols-7 gap-2 text-center opacity-30">
-                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((l, i) => <span key={i} className="text-[8px] font-black uppercase">{l}</span>)}
-              </div>
+              <div className="grid grid-cols-7 gap-2 text-center opacity-30">{['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((l, i) => <span key={i} className="text-[8px] font-black uppercase">{l}</span>)}</div>
               <FrequencyMap data={monthData} columns={7} />
             </div>
           )}
@@ -899,16 +788,14 @@ const ProfileScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
                   <span className="text-[8px] font-black text-brand/40 uppercase tracking-[0.2em] block text-center border-b border-white/5 pb-1">{m.name}</span>
                   <div className="grid grid-cols-7 gap-0.5">
                     {m.days.map((d, dIdx) => (
-                       <div key={dIdx} className="aspect-square rounded-[1px] flex items-center justify-center relative overflow-hidden" style={getHeatmapColor(d.uvs, d.isFocus, d.isShipped)}>
-                          {d.isFocus ? (
-                             <Coffee size={4} className="text-indigo-200 opacity-50" />
-                          ) : (
-                             <div className="relative w-full h-full flex items-center justify-center">
-                                {d.isShipped && <Check className={`absolute -top-1 -right-1 ${getHeatmapColor(d.uvs, d.isFocus, d.isShipped).color === '#000' ? 'text-black' : 'text-white'}`} size={6} strokeWidth={4} />}
-                                {d.uvs > 0 && <span className="text-[6px] font-black tabular-nums scale-75 leading-none">{d.uvs}</span>}
-                             </div>
-                          )}
-                        </div>
+                      <div key={dIdx} className="aspect-square rounded-[1px] flex items-center justify-center relative overflow-hidden" style={getHeatmapColor(d.uvs, d.isFocus, d.isShipped)}>
+                        {d.isFocus ? <Coffee size={4} className="text-indigo-200 opacity-50" /> : (
+                          <div className="relative w-full h-full flex items-center justify-center">
+                            {d.isShipped && <Check className={`absolute -top-1 -right-1 ${getHeatmapColor(d.uvs, d.isFocus, d.isShipped).color === '#000' ? 'text-black' : 'text-white'}`} size={6} strokeWidth={4} />}
+                            {d.uvs > 0 && <span className="text-[6px] font-black tabular-nums scale-75 leading-none">{d.uvs}</span>}
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -918,9 +805,22 @@ const ProfileScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <StatCard icon={<Flame className="text-brand" size={16} />} label="Streak" value={userState.streak} desc="Active Days" />
-        <StatCard icon={<TrendingUp className="text-brand" size={16} />} label="Units Logged" value={userState.stats.totalUniqueVisitors.toLocaleString()} desc="Total Volume" />
+      <div className="space-y-4">
+        <h3 className="text-brand font-black text-xs uppercase px-1 tracking-widest flex items-center space-x-2"><Award size={14} /><span>Survival Milestones</span></h3>
+        <div className="space-y-3">
+          {userState.achievements.map(ach => (
+            <div key={ach.id} className={`p-5 rounded-3xl border transition-all ${ach.unlocked ? 'bg-dark-card border-brand/40 shadow-xl' : 'bg-black border-white/5 opacity-50'}`}>
+              <div className="flex items-center space-x-4">
+                <div className={`text-3xl w-14 h-14 flex items-center justify-center rounded-2xl bg-black border ${ach.unlocked ? 'border-brand shadow-md' : 'border-gray-800'}`}>{ach.icon}</div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center mb-1"><h4 className="font-black text-white uppercase text-sm italic">{ach.title}</h4><span className="text-[10px] font-bold text-brand/80">{ach.progress}/{ach.target}</span></div>
+                  <p className="text-[10px] text-gray-500 font-medium mb-3">{ach.description}</p>
+                  <div className="w-full h-1 bg-black rounded-full overflow-hidden border border-white/5"><div className={`h-full transition-all duration-1000 ${ach.unlocked ? 'bg-brand' : 'bg-gray-800'}`} style={{ width: `${Math.min(100, (ach.progress / ach.target) * 100)}%` }}></div></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

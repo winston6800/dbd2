@@ -83,13 +83,15 @@ const ActivityCard: React.FC<{
   );
 };
 
-interface FeedScreenProps {
+interface FeedSectionProps {
   following: Record<string, FollowedPerson>;
   groups: Record<string, Group>;
   currentUserName: string;
+  compact?: boolean;
 }
 
-export const FeedScreen: React.FC<FeedScreenProps> = ({ following, groups, currentUserName }) => {
+/** Reusable feed section for embedding in Home */
+export const FeedSection: React.FC<FeedSectionProps> = ({ following, groups, currentUserName, compact }) => {
   const activities = buildFeedActivities(following, groups, currentUserName);
 
   const [kudosVersion, setKudosVersion] = useState(0);
@@ -105,17 +107,19 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ following, groups, curre
   };
 
   return (
-    <div className="space-y-6 pb-20 animate-in fade-in duration-500">
-      <div className="flex flex-col">
-        <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase">Activity Feed</h2>
-        <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mt-1">What your squad is building</p>
-      </div>
+    <div className={compact ? 'space-y-4' : 'space-y-6 pb-20 animate-in fade-in duration-500'}>
+      {!compact && (
+        <div className="flex flex-col">
+          <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase">Activity Feed</h2>
+          <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mt-1">What your squad is building</p>
+        </div>
+      )}
 
       {activities.length === 0 ? (
-        <div className="bg-dark-card border border-white/5 rounded-3xl p-12 text-center">
-          <Activity size={40} className="mx-auto text-gray-600 mb-4" />
-          <p className="text-gray-500 font-bold">No activity yet</p>
-          <p className="text-gray-600 text-[10px] mt-2">Follow people or join groups to see their activity</p>
+        <div className={`bg-dark-card border border-white/5 rounded-3xl text-center ${compact ? 'p-6' : 'p-12'}`}>
+          <Activity size={compact ? 24 : 40} className={`mx-auto text-gray-600 ${compact ? 'mb-2' : 'mb-4'}`} />
+          <p className="text-gray-500 font-bold text-sm">No activity yet</p>
+          <p className="text-gray-600 text-[10px] mt-1">Follow people or join groups</p>
         </div>
       ) : (
         <div className="space-y-4">

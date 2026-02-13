@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { AppScreen } from '../types';
-import { Home, BarChart3, User, Skull, Users, Activity, Compass } from 'lucide-react';
+import { Home, User, Skull, Users, Compass } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -29,16 +29,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeScreen, onNavigate }) =
 
       <nav className="border-t border-brand/20 p-2 flex justify-around items-center bg-black sticky bottom-0 z-20">
         <NavButton 
-          active={activeScreen === AppScreen.BASE} 
-          onClick={() => onNavigate(AppScreen.BASE)}
+          active={activeScreen === AppScreen.HOME} 
+          onClick={() => onNavigate(AppScreen.HOME)}
           icon={<Home size={20} />}
-          label="Command"
-        />
-        <NavButton 
-          active={activeScreen === AppScreen.FEED} 
-          onClick={() => onNavigate(AppScreen.FEED)}
-          icon={<Activity size={20} />}
-          label="Feed"
+          label="Home"
         />
         <NavButton 
           active={activeScreen === AppScreen.DISCOVER} 
@@ -53,16 +47,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeScreen, onNavigate }) =
           label="Groups"
         />
         <NavButton 
-          active={activeScreen === AppScreen.ACHIEVEMENTS} 
-          onClick={() => onNavigate(AppScreen.ACHIEVEMENTS)}
-          icon={<BarChart3 size={20} />}
-          label="Analytics"
-        />
-        <NavButton 
-          active={activeScreen === AppScreen.PROFILE} 
-          onClick={() => onNavigate(AppScreen.PROFILE)}
+          active={activeScreen === AppScreen.YOU} 
+          onClick={() => onNavigate(AppScreen.YOU)}
           icon={<User size={20} />}
-          label="Profile"
+          label="You"
         />
       </nav>
     </div>

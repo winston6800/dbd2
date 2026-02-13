@@ -98,10 +98,8 @@ export interface DiscoverablePerson {
 }
 
 export enum AppScreen {
-  BASE = 'BASE',
-  FEED = 'FEED',
+  HOME = 'HOME',
   GROUPS = 'GROUPS',
   DISCOVER = 'DISCOVER',
-  ACHIEVEMENTS = 'ACHIEVEMENTS',
-  PROFILE = 'PROFILE'
+  YOU = 'YOU'
 }
