@@ -561,11 +561,11 @@ const BaseHub: React.FC<{
           </div>
 
           <button 
-            className={`w-full py-6 rounded-2xl font-black uppercase tracking-widest border transition-all flex items-center justify-center space-x-3 shadow-xl active:scale-95 ${todayShipped ? 'bg-orange-600 border-orange-400 text-white' : 'bg-brand border-brand/30 text-white hover:bg-brand-dark'}`} 
+            className={`max-w-xs mx-auto py-3 px-6 rounded-2xl font-black uppercase tracking-widest border transition-all flex items-center justify-center space-x-2 shadow-xl active:scale-95 ${todayShipped ? 'bg-orange-600 border-orange-400 text-white' : 'bg-brand border-brand/30 text-white hover:bg-brand-dark'}`} 
             onClick={() => setShowLogConfirm(true)}
           >
-            {todayShipped ? <CheckCircle size={24} /> : <ShieldCheck size={24} />}
-            <span className="text-lg">{todayShipped ? 'Honor Code Kept' : 'Honor Code Entry'}</span>
+            {todayShipped ? <CheckCircle size={18} /> : <ShieldCheck size={18} />}
+            <span className="text-sm">{todayShipped ? 'Honor Code Kept' : 'Honor Code Entry'}</span>
           </button>
           <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest flex items-center justify-center space-x-1 italic">
             <span>Did you ship something</span>
