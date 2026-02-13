@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { AppScreen } from '../types';
-import { Home, BarChart3, User, Skull } from 'lucide-react';
+import { Home, BarChart3, User, Skull, Users, Activity, Compass } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -33,6 +33,24 @@ const Layout: React.FC<LayoutProps> = ({ children, activeScreen, onNavigate }) =
           onClick={() => onNavigate(AppScreen.BASE)}
           icon={<Home size={20} />}
           label="Command"
+        />
+        <NavButton 
+          active={activeScreen === AppScreen.FEED} 
+          onClick={() => onNavigate(AppScreen.FEED)}
+          icon={<Activity size={20} />}
+          label="Feed"
+        />
+        <NavButton 
+          active={activeScreen === AppScreen.DISCOVER} 
+          onClick={() => onNavigate(AppScreen.DISCOVER)}
+          icon={<Compass size={20} />}
+          label="Discover"
+        />
+        <NavButton 
+          active={activeScreen === AppScreen.GROUPS} 
+          onClick={() => onNavigate(AppScreen.GROUPS)}
+          icon={<Users size={20} />}
+          label="Groups"
         />
         <NavButton 
           active={activeScreen === AppScreen.ACHIEVEMENTS} 

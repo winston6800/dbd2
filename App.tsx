@@ -1,38 +1,40 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Layout from './components/Layout';
-import { AppScreen, Achievement, UserState, UserStats } from './types';
-import { verifyDashboardScreenshot } from './services/geminiService';
-import { Trophy, Zap, AlertCircle, RefreshCw, X, Flame, Calendar, Award, Clock, ShieldCheck, Target, Camera, Loader2, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, Briefcase, History, Check, Quote, Star, Filter, MousePointer2, Globe, Activity, ZapOff, ChevronRight, Skull, User, Coffee, Moon, ArrowUp, ExternalLink, Edit3, Link as LinkIcon } from 'lucide-react';
+import { AppScreen, UserState, UserStats } from './types';
+import { calculateCurrentStreak } from './lib/utils';
+import { getGroups, getUserState, saveUserState, saveGroups, decodeGroupFromUrl, updateGroup, getDisplayName, setDisplayName, getFollowing, addFollowed, updateFollowed, decodeFollowProfileFromUrl, getFollowMeLink, getChallenges, getChallengeProgress } from './lib/storage';
+import { GroupsScreen } from './components/GroupsScreen';
+import { FeedScreen } from './components/FeedScreen';
+import { DiscoveryScreen } from './components/DiscoveryScreen';
+import { RefreshCw, X, Flame, Calendar, Award, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, User, Coffee, Moon, ArrowUp, Edit3, Globe, Zap, UserPlus, Copy, Trophy } from 'lucide-react';
 
-const calculateCurrentStreak = (growthDates: string[], infrastructureFocus: Record<string, boolean>, dailyShipped: Record<string, boolean>): number => {
-  const focusDates = Object.entries(infrastructureFocus)
-    .filter(([_, active]) => active)
-    .map(([date]) => date);
-  
-  const shippedDates = Object.entries(dailyShipped)
-    .filter(([_, shipped]) => shipped)
-    .map(([date]) => date);
-  
-  // A streak day is a day where you either had focus, logged loops, or shipped/vowed
-  const allActiveDates = Array.from(new Set([...growthDates, ...focusDates, ...shippedDates])).sort((a, b) => b.localeCompare(a));
-  
-  if (allActiveDates.length === 0) return 0;
-
-  const today = new Date().toLocaleDateString('en-CA');
-  const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('en-CA');
-  const latestDate = allActiveDates[0];
-  
-  // Streak is alive if activity was today or yesterday
-  if (latestDate !== today && latestDate !== yesterday) return 0;
-
-  let streak = 1;
-  for (let i = 0; i < allActiveDates.length - 1; i++) {
-    const d1 = new Date(allActiveDates[i]);
-    const d2 = new Date(allActiveDates[i + 1]);
-    const diffDays = Math.round((d1.getTime() - d2.getTime()) / 86400000);
-    if (diffDays === 1) streak++; else break;
-  }
-  return streak;
+const ChallengesBlock: React.FC<{ userState: UserState }> = ({ userState }) => {
+  const challenges = getChallenges();
+  return (
+    <div className="bg-dark-card border border-white/10 rounded-3xl p-5 space-y-4">
+      <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center space-x-2">
+        <Trophy size={12} />
+        <span>Weekly Challenges</span>
+      </h3>
+      <div className="space-y-3">
+        {challenges.map(ch => {
+          const progress = getChallengeProgress(ch, userState);
+          const done = progress >= ch.target;
+          return (
+            <div key={ch.id} className={`p-3 rounded-2xl border ${done ? 'bg-brand/10 border-brand/30' : 'bg-black/40 border-white/5'}`}>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-sm font-bold text-white">{ch.name}</span>
+                <span className={`text-[10px] font-black ${done ? 'text-brand' : 'text-gray-500'}`}>{progress}/{ch.target}</span>
+              </div>
+              <div className="w-full h-1.5 bg-black rounded-full overflow-hidden">
+                <div className={`h-full transition-all duration-500 ${done ? 'bg-brand' : 'bg-gray-700'}`} style={{ width: `${Math.min(100, (progress / ch.target) * 100)}%` }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 };
 
 const getHeatmapColor = (uvs: number, isFocus?: boolean, isShipped?: boolean) => {
@@ -84,45 +86,67 @@ const FrequencyMap: React.FC<{ data: { date: string, uvs: number, isFocus: boole
 const App: React.FC = () => {
   const [screen, setScreen] = useState<AppScreen>(AppScreen.BASE);
   const [devMenuOpen, setDevMenuOpen] = useState(false);
-  
-  const [userState, setUserState] = useState<UserState>(() => {
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    const saved = localStorage.getItem('deadbydefault_state_v1');
-    if (saved) return JSON.parse(saved);
-    
-    return {
-      defaultKpi: "Unique Visitors",
-      websiteUrl: "",
-      growthObjective: "INCREASE DAILY UNIQUE VISITORS",
-      streak: 0,
-      minThreshold: 100,
-      history: [],
-      growthDates: [yesterday],
-      dailyUvs: { [yesterday]: 5 },
-      dailyGrowthActions: { [yesterday]: 5 },
-      dailyInfrastructureFocus: { [yesterday]: false },
-      dailyShipped: { [yesterday]: true },
-      stats: {
-        avgUvPerDay: 4,
-        conversionResilience: 4.2,
-        morningShipments: 12,
-        totalUniqueVisitors: 24,
-        totalChurnedLeads: 890
-      },
-      achievements: [
-        { id: 'survival-3', title: 'Survival Instinct', description: 'Maintain growth activity for 3 consecutive days', icon: '🩸', unlocked: false, progress: 0, target: 3, category: 'SURVIVAL' },
-        { id: 'survival-7', title: 'Default Alive', description: 'Maintain growth activity for 7 consecutive days', icon: '🔥', unlocked: false, progress: 0, target: 7, category: 'SURVIVAL' },
-        { id: 'uv-10k', title: 'The Network Effect', description: 'Log 10,000 total loops', icon: '📈', unlocked: false, progress: 24, target: 10000, category: 'VOLUME' },
-        { id: 'morning-30', title: 'First Mover', description: 'Log 30 growth logs before 9AM', icon: '☀️', unlocked: false, progress: 12, target: 30, category: 'CONSISTENCY' },
-      ],
-      currentUvs: 0,
-      isOnMaintenance: false
-    };
-  });
+  const [userState, setUserState] = useState<UserState>(getUserState);
+  const [groups, setGroups] = useState(() => getGroups());
+  const [following, setFollowing] = useState(() => getFollowing());
+  const [joinModal, setJoinModal] = useState<{ id: string; name: string; members: import('./types').GroupMember[] } | null>(null);
+  const [followModal, setFollowModal] = useState<{ name: string; userState: import('./types').UserState } | null>(null);
+  const [joinName, setJoinName] = useState('');
 
   useEffect(() => {
-    localStorage.setItem('deadbydefault_state_v1', JSON.stringify(userState));
+    saveUserState(userState);
   }, [userState]);
+
+  useEffect(() => {
+    const name = getDisplayName();
+    const groups = getGroups();
+    let updated = false;
+    for (const g of Object.values(groups)) {
+      const idx = g.members.findIndex(m => m.name === name);
+      if (idx >= 0) {
+        g.members[idx] = { ...g.members[idx], userState };
+        updated = true;
+      }
+    }
+    if (updated) {
+      saveGroups(groups);
+      setGroups({ ...getGroups() });
+    }
+  }, [userState]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const joinCode = params.get('join');
+    const followCode = params.get('follow');
+    if (joinCode) {
+      const decoded = decodeGroupFromUrl(joinCode);
+      if (decoded) {
+        const groups = getGroups();
+        const existing = groups[decoded.id];
+        if (existing) {
+          updateGroup(decoded.id, { members: decoded.members });
+          setGroups(getGroups());
+        } else {
+          setJoinModal({ id: decoded.id, name: decoded.name, members: decoded.members });
+        }
+      }
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+    if (followCode) {
+      const decoded = decodeFollowProfileFromUrl(followCode);
+      if (decoded) {
+        const following = getFollowing();
+        const existing = Object.values(following).find(p => p.name === decoded.name);
+        if (existing) {
+          updateFollowed(existing.id, decoded.userState);
+          setFollowing({ ...getFollowing() });
+        } else {
+          setFollowModal({ name: decoded.name, userState: decoded.userState });
+        }
+      }
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   const updateDailyLoops = (delta: number) => {
     const today = new Date().toLocaleDateString('en-CA');
@@ -151,13 +175,20 @@ const App: React.FC = () => {
     });
   };
 
-  const handleSetHonorVow = (shipped: boolean) => {
+  const handleSetHonorVow = (shipped: boolean, note?: string) => {
     const today = new Date().toLocaleDateString('en-CA');
     setUserState(prev => {
       const newShipped = { ...prev.dailyShipped, [today]: shipped };
+      const prevNotes = prev.dailyShipNote || {};
+      const newNotes = shipped && note
+        ? { ...prevNotes, [today]: note }
+        : shipped
+        ? (() => { const { [today]: _, ...r } = prevNotes; return r; })()
+        : (() => { const { [today]: _, ...r } = prevNotes; return r; })();
       return {
         ...prev,
         dailyShipped: newShipped,
+        dailyShipNote: Object.keys(newNotes).length ? newNotes : undefined,
         streak: calculateCurrentStreak(prev.growthDates, prev.dailyInfrastructureFocus, newShipped),
       };
     });
@@ -184,14 +215,14 @@ const App: React.FC = () => {
       const dateStr = d.toLocaleDateString('en-CA');
       const rand = Math.random();
       if (rand > 0.3) {
-        datesToAdd.push(dStr);
-        uvsToAdd[dStr] = Math.floor(Math.random() * 20) + 1;
-        focusToAdd[dStr] = false;
-        shippedToAdd[dStr] = Math.random() > 0.2;
+        datesToAdd.push(dateStr);
+        uvsToAdd[dateStr] = Math.floor(Math.random() * 20) + 1;
+        focusToAdd[dateStr] = false;
+        shippedToAdd[dateStr] = Math.random() > 0.2;
       } else {
-        uvsToAdd[dStr] = 0;
-        focusToAdd[dStr] = Math.random() > 0.8;
-        shippedToAdd[dStr] = false;
+        uvsToAdd[dateStr] = 0;
+        focusToAdd[dateStr] = Math.random() > 0.8;
+        shippedToAdd[dateStr] = false;
       }
     }
     
@@ -241,11 +272,109 @@ const App: React.FC = () => {
             }}
           />
         )}
+        {screen === AppScreen.FEED && (
+          <FeedScreen
+            following={following}
+            groups={groups}
+            currentUserName={getDisplayName()}
+          />
+        )}
+        {screen === AppScreen.DISCOVER && (
+          <DiscoveryScreen
+            groups={groups}
+            following={following}
+            onFollowingChange={setFollowing}
+            currentUserName={getDisplayName()}
+          />
+        )}
+        {screen === AppScreen.GROUPS && (
+          <GroupsScreen
+            groups={groups}
+            onGroupsChange={setGroups}
+            following={following}
+            onFollowingChange={setFollowing}
+            currentUserName={getDisplayName()}
+            currentUserState={userState}
+          />
+        )}
         {screen === AppScreen.ACHIEVEMENTS && (
           <AchievementsDashboard userState={userState} />
         )}
         {screen === AppScreen.PROFILE && (
           <ProfileScreen userState={userState} />
+        )}
+
+        {joinModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
+            <div className="bg-dark-card border border-brand/50 p-8 rounded-[40px] shadow-2xl max-w-xs w-full text-center space-y-6">
+              <h3 className="text-xl font-black italic uppercase text-white">Join {joinModal.name}?</h3>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Enter your name to join this group</p>
+              <input
+                type="text"
+                placeholder="Your name"
+                value={joinName}
+                onChange={(e) => setJoinName(e.target.value)}
+                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold placeholder:text-gray-600 outline-none focus:border-brand/50"
+              />
+              <div className="flex flex-col space-y-2">
+                <button
+                  onClick={() => {
+                    if (!joinName.trim()) return;
+                    const memberId = 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+                    const newMember = { id: memberId, name: joinName.trim(), userState };
+                    const updatedMembers = [...joinModal.members, newMember];
+                    const allGroups = getGroups();
+                    const existing = allGroups[joinModal.id];
+                    if (existing) {
+                      updateGroup(joinModal.id, { members: updatedMembers });
+                    } else {
+                      allGroups[joinModal.id] = {
+                        id: joinModal.id,
+                        name: joinModal.name,
+                        members: updatedMembers,
+                        createdAt: new Date().toISOString()
+                      };
+                      saveGroups(allGroups);
+                    }
+                    setDisplayName(joinName.trim());
+                    setGroups({ ...getGroups() });
+                    setJoinModal(null);
+                    setJoinName('');
+                    setScreen(AppScreen.GROUPS);
+                  }}
+                  disabled={!joinName.trim()}
+                  className="w-full py-4 bg-brand text-white font-black uppercase tracking-widest rounded-2xl disabled:opacity-40"
+                >
+                  Join
+                </button>
+                <button onClick={() => { setJoinModal(null); setJoinName(''); }} className="w-full py-4 bg-white/5 text-gray-600 font-black uppercase text-[10px] rounded-2xl">Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {followModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
+            <div className="bg-dark-card border border-brand/50 p-8 rounded-[40px] shadow-2xl max-w-xs w-full text-center space-y-6">
+              <h3 className="text-xl font-black italic uppercase text-white">Follow {followModal.name}?</h3>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Add them to your following list to see their progress</p>
+              <div className="flex flex-col space-y-2">
+                <button
+                  onClick={() => {
+                    const id = 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+                    addFollowed({ id, name: followModal.name, userState: followModal.userState });
+                    setFollowing({ ...getFollowing() });
+                    setFollowModal(null);
+                    setScreen(AppScreen.GROUPS);
+                  }}
+                  className="w-full py-4 bg-brand text-white font-black uppercase tracking-widest rounded-2xl"
+                >
+                  Follow
+                </button>
+                <button onClick={() => setFollowModal(null)} className="w-full py-4 bg-white/5 text-gray-600 font-black uppercase text-[10px] rounded-2xl">Cancel</button>
+              </div>
+            </div>
+          </div>
         )}
 
         <div className="fixed bottom-24 right-4 z-50">
@@ -278,12 +407,13 @@ const App: React.FC = () => {
 const BaseHub: React.FC<{ 
   userState: UserState, 
   onUpdateLoops: (delta: number) => void,
-  onSetHonorVow: (shipped: boolean) => void,
+  onSetHonorVow: (shipped: boolean, note?: string) => void,
   onUpdateWebsite: (url: string) => void,
   onUpdateObjective: (obj: string) => void,
   onToggleInfra: (active: boolean) => void
 }> = ({ userState, onUpdateLoops, onSetHonorVow, onUpdateWebsite, onUpdateObjective, onToggleInfra }) => {
   const [showLogConfirm, setShowLogConfirm] = useState(false);
+  const [shipNote, setShipNote] = useState('');
   const [showBreakConfirm, setShowBreakConfirm] = useState(false);
   const [isEditingWebsite, setIsEditingWebsite] = useState(false);
   const [isEditingObjective, setIsEditingObjective] = useState(false);
@@ -477,6 +607,8 @@ const BaseHub: React.FC<{
         </div>
       </div>
 
+      <ChallengesBlock userState={userState} />
+
       <div className="flex justify-center pt-2">
         <button onClick={() => setShowBreakConfirm(true)} className={`px-8 py-3 rounded-full border text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center space-x-2 shadow-2xl ${userState.isOnMaintenance ? 'bg-indigo-900 border-indigo-700 text-white' : 'bg-white/5 border-white/10 text-gray-500 hover:text-indigo-400/80'}`}>
           {userState.isOnMaintenance ? <Coffee size={14} /> : <Moon size={14} />}
@@ -513,8 +645,15 @@ const BaseHub: React.FC<{
                     Lying about growth leads to death. Did you actually complete your loops and ship something today?
                   </p>
                 </div>
+                <input
+                  type="text"
+                  placeholder="What did you ship? (optional)"
+                  value={shipNote}
+                  onChange={(e) => setShipNote(e.target.value)}
+                  className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold placeholder:text-gray-600 outline-none focus:border-brand/50"
+                />
                 <div className="flex flex-col space-y-2">
-                  <button onClick={() => { onSetHonorVow(true); setShowLogConfirm(false); }} className="w-full py-4 bg-brand text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-lg flex items-center justify-center space-x-2">
+                  <button onClick={() => { onSetHonorVow(true, shipNote.trim() || undefined); setShowLogConfirm(false); setShipNote(''); }} className="w-full py-4 bg-brand text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-lg flex items-center justify-center space-x-2">
                     <Check size={16} strokeWidth={4} />
                     <span>Yes, I Shipped</span>
                   </button>
@@ -596,6 +735,9 @@ const ProfileScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
   type TimeFrame = 'WEEK' | 'MONTH' | 'YEAR' | 'ALL';
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('MONTH');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [displayName, setDisplayNameState] = useState(getDisplayName);
+  const [editingName, setEditingName] = useState(false);
+  const [followLinkCopied, setFollowLinkCopied] = useState(false);
 
   const weekData = useMemo(() => {
     const days = [];
@@ -670,6 +812,43 @@ const ProfileScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
 
   return (
     <div className="space-y-6 pb-20 animate-in fade-in duration-500">
+      <div className="bg-dark-card border border-white/10 rounded-3xl p-5 space-y-4">
+        <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Profile</h3>
+        <div>
+          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Display name</p>
+          {editingName ? (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayNameState(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (setDisplayName(displayName), setEditingName(false))}
+                className="flex-1 bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-white text-sm font-bold outline-none focus:border-brand/50"
+                autoFocus
+              />
+              <button onClick={() => { setDisplayName(displayName); setEditingName(false); }} className="px-4 py-2 bg-brand text-white rounded-xl font-bold">Save</button>
+            </div>
+          ) : (
+            <button onClick={() => setEditingName(true)} className="text-white font-bold">{displayName}</button>
+          )}
+        </div>
+        <div>
+          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Let people follow you</p>
+          <button
+            onClick={() => {
+              const link = getFollowMeLink(displayName, userState);
+              navigator.clipboard.writeText(link);
+              setFollowLinkCopied(true);
+              setTimeout(() => setFollowLinkCopied(false), 2000);
+            }}
+            className="w-full py-3 rounded-xl bg-brand/20 border border-brand/40 flex items-center justify-center space-x-2 text-brand font-bold hover:bg-brand/30 transition-colors"
+          >
+            {followLinkCopied ? <Check size={16} /> : <Copy size={16} />}
+            <span>{followLinkCopied ? 'Copied!' : 'Copy follow link'}</span>
+          </button>
+          <p className="text-[9px] text-gray-500 mt-1">Share this link so others can follow your progress</p>
+        </div>
+      </div>
       <div className="flex flex-col">
         <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">Field Analytics</h2>
         <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mt-1">Consistency & Retention Metrics</p>

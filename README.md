@@ -1,20 +1,16 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# DeadByDefault - Growth Protocol
 
-# Run and deploy your AI Studio app
+A survival-style growth tracker. Track daily loops, streaks, and ship status. Share progress with groups and followers via links.
 
-This contains everything you need to run your app locally.
+## Quick Start
 
-View your app in AI Studio: https://ai.studio/apps/drive/18kuJB9RuJ9M17XVHBjx9Jb5sA74oyPVr
+```bash
+npm install
+npm run dev
+```
 
-## Run Locally
+Open http://localhost:3000 — no API keys required.
 
-**Prerequisites:**  Node.js
+## Documentation
 
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+See [app.md](./app.md) for full functionality: Command, Analytics, Profile, Groups, and Following.
