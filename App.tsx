@@ -6,14 +6,15 @@ import { getGroups, getUserState, saveUserState, saveGroups, decodeGroupFromUrl,
 import { GroupsScreen } from './components/GroupsScreen';
 import { FeedSection } from './components/FeedScreen';
 import { DiscoveryScreen } from './components/DiscoveryScreen';
-import { RefreshCw, X, Flame, Calendar, Award, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, User, Coffee, Moon, ArrowUp, Edit3, Globe, Zap, UserPlus, Copy } from 'lucide-react';
+import { RecordScreen } from './components/RecordScreen';
+import { RefreshCw, X, Flame, Calendar, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, User, Coffee, ArrowUp, Edit3, Globe, Zap, UserPlus, Copy, Mic } from 'lucide-react';
 
-const getHeatmapColor = (uvs: number, isFocus?: boolean, isShipped?: boolean) => {
+const getHeatmapColor = (hours: number, isFocus?: boolean, hasActivity?: boolean) => {
   if (isFocus) return { backgroundColor: 'rgb(49, 46, 129)', border: '1px solid rgba(79, 70, 229, 0.4)', color: '#fff' };
-  if (uvs === 0 && !isShipped) return { backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' };
+  if (hours === 0 && !hasActivity) return { backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' };
   
-  const maxIntensityVal = 15;
-  const ratio = Math.min(1, uvs / maxIntensityVal);
+  const maxIntensityVal = 8;
+  const ratio = Math.min(1, hours / maxIntensityVal);
   
   const r = 225 + (255 - 225) * ratio;
   const g = 29 + (255 - 29) * ratio;
@@ -30,27 +31,32 @@ const getHeatmapColor = (uvs: number, isFocus?: boolean, isShipped?: boolean) =>
   };
 };
 
-const FrequencyMap: React.FC<{ data: { date: string, uvs: number, isFocus: boolean, isShipped: boolean, isToday?: boolean }[], columns?: number }> = ({ data, columns = 7 }) => (
+const FrequencyMap: React.FC<{ data: { date: string, hours: number, isFocus: boolean, firstNote?: string, isToday?: boolean }[], columns?: number }> = ({ data, columns = 7 }) => (
   <div className={`grid gap-2`} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
-    {data.map((day, idx) => (
-      <div 
-        key={idx} 
-        className={`aspect-square rounded-lg transition-all duration-300 flex items-center justify-center relative overflow-hidden ${day.isToday ? 'ring-2 ring-brand animate-pulse-slow' : ''}`} 
-        style={getHeatmapColor(day.uvs, day.isFocus, day.isShipped)}
-      >
-        {day.isFocus ? (
-          <Coffee size={12} className="text-indigo-200" />
-        ) : (
-          <div className="flex flex-col items-center justify-center">
-            {day.isShipped && (
-              <Check className={`absolute top-0.5 right-0.5 ${getHeatmapColor(day.uvs, day.isFocus, day.isShipped).color === '#000' ? 'text-black' : 'text-white'}`} size={8} strokeWidth={4} />
-            )}
-            {day.uvs > 0 && <span className="text-[11px] font-black tabular-nums tracking-tighter leading-none">{day.uvs}</span>}
-            {day.uvs === 0 && day.isShipped && <Check size={14} strokeWidth={4} />}
-          </div>
-        )}
-      </div>
-    ))}
+    {data.map((day, idx) => {
+      const hasActivity = day.hours > 0;
+      const style = getHeatmapColor(day.hours, day.isFocus, hasActivity);
+      return (
+        <div 
+          key={idx} 
+          className={`aspect-square rounded-lg transition-all duration-300 flex items-center justify-center relative overflow-visible group/cell cursor-default ${day.isToday ? 'ring-2 ring-brand animate-pulse-slow' : ''}`} 
+          style={style}
+        >
+          {day.isFocus ? (
+            <Coffee size={12} className="text-indigo-200" />
+          ) : (
+            <div className="flex flex-col items-center justify-center">
+              {(hasActivity || day.firstNote) && <span className="text-[11px] font-black tabular-nums tracking-tighter leading-none">{(day.hours || 0).toFixed(2)}</span>}
+            </div>
+          )}
+          {day.firstNote && (
+            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1.5 rounded-lg bg-black/95 border border-white/10 shadow-xl opacity-0 group-hover/cell:opacity-100 transition-opacity duration-200 z-20 pointer-events-none whitespace-nowrap max-w-[140px] truncate text-[9px] text-white font-medium">
+              {day.firstNote}
+            </div>
+          )}
+        </div>
+      );
+    })}
   </div>
 );
 
@@ -67,6 +73,20 @@ const App: React.FC = () => {
   useEffect(() => {
     saveUserState(userState);
   }, [userState]);
+
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    const body = document.body;
+    if (userState.isOnMaintenance) {
+      meta?.setAttribute('content', '#1e1b4b');
+      body.classList.remove('bg-gradient-red');
+      body.classList.add('bg-gradient-indigo', 'break-mode');
+    } else {
+      meta?.setAttribute('content', '#000000');
+      body.classList.remove('bg-gradient-indigo', 'break-mode');
+      body.classList.add('bg-gradient-red');
+    }
+  }, [userState.isOnMaintenance]);
 
   useEffect(() => {
     const name = getDisplayName();
@@ -146,31 +166,14 @@ const App: React.FC = () => {
     });
   };
 
-  const handleSetHonorVow = (shipped: boolean, note?: string) => {
+  const handleSaveInputPost = (post: string) => {
     const today = new Date().toLocaleDateString('en-CA');
-    setUserState(prev => {
-      const newShipped = { ...prev.dailyShipped, [today]: shipped };
-      const prevNotes = prev.dailyShipNote || {};
-      const newNotes = shipped && note
-        ? { ...prevNotes, [today]: note }
-        : shipped
-        ? (() => { const { [today]: _, ...r } = prevNotes; return r; })()
-        : (() => { const { [today]: _, ...r } = prevNotes; return r; })();
-      return {
-        ...prev,
-        dailyShipped: newShipped,
-        dailyShipNote: Object.keys(newNotes).length ? newNotes : undefined,
-        streak: calculateCurrentStreak(prev.growthDates, prev.dailyInfrastructureFocus, newShipped),
-      };
-    });
-  };
-
-  const updateWebsite = (url: string) => {
-    setUserState(prev => ({ ...prev, websiteUrl: url }));
-  };
-
-  const updateGrowthObjective = (objective: string) => {
-    setUserState(prev => ({ ...prev, growthObjective: objective }));
+    const now = new Date().toISOString();
+    setUserState(prev => ({
+      ...prev,
+      dailyInputPost: { ...(prev.dailyInputPost || {}), [today]: post },
+      dailyPostTime: post.trim() ? { ...(prev.dailyPostTime || {}), [today]: now } : prev.dailyPostTime,
+    }));
   };
 
   const simulateData = (daysCount: number) => {
@@ -223,8 +226,28 @@ const App: React.FC = () => {
   };
 
   return (
-    <Layout activeScreen={screen} onNavigate={setScreen}>
+    <Layout activeScreen={screen} onNavigate={setScreen} isOnBreak={userState.isOnMaintenance}>
       <div className="relative min-h-full">
+        {screen === AppScreen.RECORD && (
+          <RecordScreen userState={userState} onSave={handleSaveInputPost} onUpdateLoops={updateDailyLoops} onSaveSession={(hours, firstNote) => {
+            const today = new Date().toLocaleDateString('en-CA');
+            const now = new Date().toISOString();
+            setUserState(p => ({
+              ...p,
+              dailyHours: { ...(p.dailyHours || {}), [today]: (p.dailyHours?.[today] || 0) + hours },
+              dailyFirstNote: !p.dailyFirstNote?.[today] ? { ...(p.dailyFirstNote || {}), [today]: firstNote } : p.dailyFirstNote,
+              dailyPostTime: { ...(p.dailyPostTime || {}), [today]: now },
+            }));
+          }} onToggleInfra={(active) => {
+            const today = new Date().toLocaleDateString('en-CA');
+            setUserState(p => ({ 
+              ...p, 
+              isOnMaintenance: active, 
+              dailyInfrastructureFocus: { ...p.dailyInfrastructureFocus, [today]: active },
+              streak: calculateCurrentStreak(p.growthDates, { ...p.dailyInfrastructureFocus, [today]: active }, p.dailyShipped)
+            }));
+          }} />
+        )}
         {screen === AppScreen.HOME && (
           <BaseHub 
             userState={userState} 
@@ -232,18 +255,6 @@ const App: React.FC = () => {
             groups={groups}
             currentUserName={getDisplayName()}
             onUpdateLoops={updateDailyLoops}
-            onSetHonorVow={handleSetHonorVow}
-            onUpdateWebsite={updateWebsite}
-            onUpdateObjective={updateGrowthObjective}
-            onToggleInfra={(active) => {
-              const today = new Date().toLocaleDateString('en-CA');
-              setUserState(p => ({ 
-                ...p, 
-                isOnMaintenance: active, 
-                dailyInfrastructureFocus: { ...p.dailyInfrastructureFocus, [today]: active },
-                streak: calculateCurrentStreak(p.growthDates, { ...p.dailyInfrastructureFocus, [today]: active }, p.dailyShipped)
-              }));
-            }}
           />
         )}
         {screen === AppScreen.DISCOVER && (
@@ -265,7 +276,7 @@ const App: React.FC = () => {
           />
         )}
         {screen === AppScreen.YOU && (
-          <YouScreen userState={userState} />
+          <YouScreen userState={userState} onUpdateProfile={(bio, photo) => setUserState(p => ({ ...p, ...(bio !== undefined && { profileBio: bio }), ...(photo !== undefined && { profilePhoto: photo }) }))} />
         )}
 
         {joinModal && (
@@ -374,22 +385,8 @@ const BaseHub: React.FC<{
   groups: Record<string, import('./types').Group>;
   currentUserName: string;
   onUpdateLoops: (delta: number) => void;
-  onSetHonorVow: (shipped: boolean, note?: string) => void;
-  onUpdateWebsite: (url: string) => void;
-  onUpdateObjective: (obj: string) => void;
-  onToggleInfra: (active: boolean) => void;
-}> = ({ userState, following, groups, currentUserName, onUpdateLoops, onSetHonorVow, onUpdateWebsite, onUpdateObjective, onToggleInfra }) => {
-  const [showLogConfirm, setShowLogConfirm] = useState(false);
-  const [shipNote, setShipNote] = useState('');
-  const [showBreakConfirm, setShowBreakConfirm] = useState(false);
-  const [isEditingWebsite, setIsEditingWebsite] = useState(false);
-  const [isEditingObjective, setIsEditingObjective] = useState(false);
-  const [tempWebsite, setTempWebsite] = useState(userState.websiteUrl || '');
-  const [tempObjective, setTempObjective] = useState(userState.growthObjective || 'INCREASE DAILY UNIQUE VISITORS');
-
+}> = ({ userState, following, groups, currentUserName, onUpdateLoops }) => {
   const todayStr = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
-  const todayLoops = userState.dailyUvs[todayStr] || 0;
-  const todayShipped = userState.dailyShipped[todayStr] || false;
 
   const weekData = useMemo(() => {
     const days = [];
@@ -398,34 +395,24 @@ const BaseHub: React.FC<{
       const d = new Date(now);
       d.setDate(d.getDate() - i);
       const dateStr = d.toLocaleDateString('en-CA');
+      const post = userState.dailyInputPost?.[dateStr];
+      const firstNote = userState.dailyFirstNote?.[dateStr] || (post ? post.split(/\n/)[0]?.trim().slice(0, 80) : undefined);
       days.push({ 
         date: dateStr, 
-        uvs: userState.dailyUvs[dateStr] || 0,
+        hours: userState.dailyHours?.[dateStr] ?? (userState.dailyUvs?.[dateStr] ? userState.dailyUvs[dateStr] * 0.5 : 0),
         isFocus: !!userState.dailyInfrastructureFocus[dateStr],
-        isShipped: !!userState.dailyShipped[dateStr],
+        firstNote,
         isToday: dateStr === todayStr,
         label: d.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0)
       });
     }
     return days;
-  }, [userState.dailyUvs, userState.dailyInfrastructureFocus, userState.dailyShipped, todayStr]);
-
-  const saveWebsite = () => {
-    onUpdateWebsite(tempWebsite);
-    setIsEditingWebsite(false);
-  };
-
-  const saveObjective = () => {
-    const finalObj = tempObjective.trim() || 'INCREASE DAILY UNIQUE VISITORS';
-    onUpdateObjective(finalObj.toUpperCase());
-    setTempObjective(finalObj.toUpperCase());
-    setIsEditingObjective(false);
-  };
+  }, [userState.dailyHours, userState.dailyInfrastructureFocus, userState.dailyFirstNote, userState.dailyInputPost, todayStr]);
 
   return (
     <div className="space-y-6 pb-20 animate-in fade-in duration-500">
-      <div className="bg-dark-card border border-brand/20 rounded-[32px] p-6 shadow-2xl relative overflow-hidden group">
-        <div className="absolute top-4 left-4 z-20 px-3 py-1 bg-brand rounded-xl flex items-center space-x-2 shadow-lg border-2 border-white/10 group-hover:scale-105 transition-transform">
+      <div className="bg-dark-card border border-brand/20 rounded-[32px] p-6 shadow-2xl relative overflow-hidden group/card">
+        <div className="absolute top-4 left-4 z-20 px-3 py-1 bg-brand rounded-xl flex items-center space-x-2 shadow-lg border-2 border-white/10 group-hover/card:scale-105 transition-transform">
           <span className="text-xl font-black text-white italic tracking-tighter leading-none">{userState.streak}</span>
           <span className="text-[8px] font-black text-white/60 uppercase tracking-widest">STREAK</span>
         </div>
@@ -437,236 +424,55 @@ const BaseHub: React.FC<{
           </div>
           
           <div className="grid grid-cols-7 gap-2 w-full p-4 bg-black/40 rounded-[24px] border border-white/5">
-            {weekData.map((d, i) => (
-              <div key={i} className="flex flex-col items-center space-y-2">
-                <span className={`text-[8px] font-black uppercase ${d.isToday ? 'text-brand' : 'text-gray-600'}`}>{d.label}</span>
-                <div 
-                  className={`w-full aspect-square rounded-lg transition-all duration-300 flex items-center justify-center relative overflow-hidden ${d.isToday ? 'ring-2 ring-brand animate-pulse-slow shadow-[0_0_15px_rgba(225,29,72,0.3)]' : ''}`}
-                  style={getHeatmapColor(d.uvs, d.isFocus, d.isShipped)}
-                >
-                  {d.isFocus ? (
-                    <Coffee size={10} className="text-indigo-200" />
-                  ) : (
-                    <div className="relative flex items-center justify-center">
-                      {d.isShipped && <Check className={`absolute -top-3 -right-3 ${getHeatmapColor(d.uvs, d.isFocus, d.isShipped).color === '#000' ? 'text-black' : 'text-white'}`} size={10} strokeWidth={4} />}
-                      {d.uvs > 0 && <span className="text-[10px] font-black tabular-nums tracking-tighter">{d.uvs}</span>}
-                      {d.uvs === 0 && d.isShipped && <Check size={14} strokeWidth={4} />}
-                    </div>
-                  )}
+            {weekData.map((d, i) => {
+              const hasActivity = d.hours > 0 || !!d.firstNote;
+              const style = getHeatmapColor(d.hours, d.isFocus, hasActivity);
+              return (
+                <div key={i} className="flex flex-col items-center space-y-2">
+                  <span className={`text-[8px] font-black uppercase ${d.isToday ? 'text-brand' : 'text-gray-600'}`}>{d.label}</span>
+                  <div 
+                    className={`w-full aspect-square rounded-lg transition-all duration-300 flex items-center justify-center relative overflow-visible group/cell cursor-default ${d.isToday ? 'ring-2 ring-brand animate-pulse-slow shadow-[0_0_15px_rgba(225,29,72,0.3)]' : ''}`}
+                    style={style}
+                  >
+                    {d.isFocus ? (
+                      <Coffee size={10} className="text-indigo-200" />
+                    ) : (
+                      <div className="relative flex items-center justify-center">
+                        {(hasActivity || d.firstNote) && <span className="text-[10px] font-black tabular-nums tracking-tighter">{(d.hours || 0).toFixed(2)}</span>}
+                      </div>
+                    )}
+                    {d.firstNote && (
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1.5 rounded-lg bg-black/95 border border-white/10 shadow-xl opacity-0 group-hover/cell:opacity-100 transition-opacity duration-200 z-20 pointer-events-none whitespace-nowrap max-w-[140px] truncate text-[9px] text-white font-medium">
+                        {d.firstNote}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
-      </div>
-
-      <div className={`p-6 rounded-3xl border transition-all duration-500 flex flex-col items-center justify-center text-center relative ${
-        userState.isOnMaintenance ? 'bg-indigo-950/40 border-indigo-500/50 shadow-[0_0_30px_rgba(49,46,129,0.3)]' : 'bg-brand/5 border-brand/20'
-      }`}>
-        <div className="flex items-center space-x-2 mb-2">
-          {userState.isOnMaintenance ? <Coffee className="text-indigo-400" size={16} /> : <TrendingUp className="text-brand" size={16} />}
-          <span className={`text-[10px] font-black uppercase tracking-widest ${userState.isOnMaintenance ? 'text-indigo-400' : 'text-brand'}`}>
-            {userState.isOnMaintenance ? 'Active Recovery' : 'Growth Objective'}
-          </span>
-        </div>
-        
-        <div className="w-full mb-2">
-          {isEditingObjective && !userState.isOnMaintenance ? (
-            <input 
-              autoFocus
-              className="w-full bg-transparent border-none outline-none text-2xl font-black italic tracking-tighter uppercase text-brand text-center leading-tight animate-in zoom-in-95"
-              value={tempObjective}
-              onChange={(e) => setTempObjective(e.target.value)}
-              onBlur={saveObjective}
-              onKeyDown={(e) => e.key === 'Enter' && saveObjective()}
-            />
-          ) : (
-            <h2 
-              onClick={() => !userState.isOnMaintenance && setIsEditingObjective(true)}
-              className={`text-2xl font-black italic tracking-tighter uppercase text-white leading-tight ${!userState.isOnMaintenance ? 'cursor-pointer hover:text-brand transition-colors select-none' : ''}`}
-            >
-              {userState.isOnMaintenance ? 'Break Day' : (userState.growthObjective || 'INCREASE DAILY UNIQUE VISITORS')}
-            </h2>
-          )}
-        </div>
-
-        <div className="w-full px-4">
-          {isEditingWebsite ? (
-            <div className="flex items-center space-x-2 bg-black/60 p-1.5 rounded-2xl border border-white/10 w-full animate-in slide-in-from-top-2">
-              <input 
-                autoFocus
-                type="text" 
-                value={tempWebsite} 
-                onChange={(e) => setTempWebsite(e.target.value)}
-                onBlur={saveWebsite}
-                onKeyDown={(e) => e.key === 'Enter' && saveWebsite()}
-                placeholder="yourwebsite.com"
-                className="flex-1 bg-transparent border-none outline-none text-[10px] font-bold text-white px-3 placeholder:text-gray-700"
-              />
-              <button onClick={saveWebsite} className="p-2 bg-brand/20 text-brand rounded-xl hover:bg-brand/40 transition-colors">
-                <Check size={14} strokeWidth={3} />
-              </button>
-            </div>
-          ) : (
-            <button 
-              onClick={() => setIsEditingWebsite(true)}
-              className="group flex items-center justify-center space-x-2 py-1.5 px-4 rounded-full bg-white/5 border border-white/5 hover:border-brand/40 hover:bg-brand/5 transition-all w-full max-w-[200px] mx-auto overflow-hidden"
-            >
-              {userState.websiteUrl ? (
-                <>
-                  <Globe size={10} className="text-brand/60 group-hover:text-brand" />
-                  <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest truncate group-hover:text-white transition-colors">{userState.websiteUrl.replace(/^https?:\/\//, '')}</span>
-                  <Edit3 size={8} className="text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </>
-              ) : (
-                <>
-                  <Plus size={10} className="text-brand/60" />
-                  <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Add Website</span>
-                </>
-              )}
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className={`bg-gradient-to-br from-dark-accent to-black p-6 rounded-[32px] text-center space-y-6 border border-brand/20 shadow-2xl transition-all duration-500 ${userState.isOnMaintenance ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
-        <div className="flex justify-between items-center">
-          <h3 className="text-white font-black text-xl italic uppercase tracking-tighter">Growth Terminal</h3>
-          <div className="flex items-center space-x-1.5 bg-black px-3 py-1.5 rounded-full border border-brand/30">
-            <Zap size={12} className="text-brand" />
-            <span className="text-[10px] font-black text-brand">Live Volume</span>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center space-y-4">
-          <div className="flex items-center justify-center space-x-6 bg-black/60 p-4 rounded-3xl border border-white/5 w-full">
-             <button 
-              onClick={() => onUpdateLoops(-1)} 
-              className="w-12 h-12 rounded-2xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand hover:bg-brand/20 active:scale-90 transition-all"
-             >
-               <Minus size={20} />
-             </button>
-             
-             <div className="flex flex-col items-center">
-                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">LOOPS TODAY</span>
-                <span className="text-4xl font-black italic text-white tracking-tighter tabular-nums">{todayLoops}</span>
-             </div>
-
-             <button 
-              onClick={() => onUpdateLoops(1)} 
-              className="w-12 h-12 rounded-2xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand hover:bg-brand/20 active:scale-90 transition-all"
-             >
-               <Plus size={20} />
-             </button>
-          </div>
-
-          <button 
-            className={`max-w-xs mx-auto py-3 px-6 rounded-2xl font-black uppercase tracking-widest border transition-all flex items-center justify-center space-x-2 shadow-xl active:scale-95 ${todayShipped ? 'bg-orange-600 border-orange-400 text-white' : 'bg-brand border-brand/30 text-white hover:bg-brand-dark'}`} 
-            onClick={() => setShowLogConfirm(true)}
-          >
-            {todayShipped ? <CheckCircle size={18} /> : <ShieldCheck size={18} />}
-            <span className="text-sm">{todayShipped ? 'Honor Code Kept' : 'Honor Code Entry'}</span>
-          </button>
-          <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest flex items-center justify-center space-x-1 italic">
-            <span>Did you ship something</span>
-            <ArrowUp size={12} strokeWidth={3} className="text-brand" />
-          </p>
-        </div>
-      </div>
-
-      <div className="flex justify-center pt-2">
-        <button onClick={() => setShowBreakConfirm(true)} className={`px-8 py-3 rounded-full border text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center space-x-2 shadow-2xl ${userState.isOnMaintenance ? 'bg-indigo-900 border-indigo-700 text-white' : 'bg-white/5 border-white/10 text-gray-500 hover:text-indigo-400/80'}`}>
-          {userState.isOnMaintenance ? <Coffee size={14} /> : <Moon size={14} />}
-          <span>{userState.isOnMaintenance ? 'End Break' : 'Take a Break'}</span>
-        </button>
       </div>
 
       <div>
         <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Activity</h3>
-        <FeedSection following={following} groups={groups} currentUserName={currentUserName} compact />
+        <FeedSection following={following} groups={groups} currentUserName={currentUserName} currentUserState={userState} compact />
       </div>
-
-      {showLogConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
-          <div className="bg-dark-card border border-brand/50 p-8 rounded-[40px] shadow-2xl max-w-xs w-full text-center space-y-6 animate-in zoom-in-95">
-            {todayShipped ? (
-              <>
-                <div className="mx-auto w-16 h-16 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-orange-400"><RefreshCw size={32} /></div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-black italic uppercase text-white">Revoke Vow?</h3>
-                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
-                    Are you sure you want to undo your Honor Code status for today? This may impact your survival streak.
-                  </p>
-                </div>
-                <div className="flex flex-col space-y-2">
-                  <button onClick={() => { onSetHonorVow(false); setShowLogConfirm(false); }} className="w-full py-4 bg-orange-600 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-lg flex items-center justify-center space-x-2">
-                    <X size={16} strokeWidth={4} />
-                    <span>Yes, Undo Status</span>
-                  </button>
-                  <button onClick={() => setShowLogConfirm(false)} className="w-full py-4 bg-white/5 text-gray-600 font-black uppercase text-[10px] rounded-2xl">Nevermind</button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="mx-auto w-16 h-16 rounded-full bg-brand/10 border border-brand/30 flex items-center justify-center text-brand"><Skull size={32} /></div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-black italic uppercase text-white">Survival Vow</h3>
-                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
-                    Lying about growth leads to death. Did you actually complete your loops and ship something today?
-                  </p>
-                </div>
-                <input
-                  type="text"
-                  placeholder="What did you ship? (optional)"
-                  value={shipNote}
-                  onChange={(e) => setShipNote(e.target.value)}
-                  className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold placeholder:text-gray-600 outline-none focus:border-brand/50"
-                />
-                <div className="flex flex-col space-y-2">
-                  <button onClick={() => { onSetHonorVow(true, shipNote.trim() || undefined); setShowLogConfirm(false); setShipNote(''); }} className="w-full py-4 bg-brand text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-lg flex items-center justify-center space-x-2">
-                    <Check size={16} strokeWidth={4} />
-                    <span>Yes, I Shipped</span>
-                  </button>
-                  <button onClick={() => setShowLogConfirm(false)} className="w-full py-4 bg-white/5 text-gray-600 font-black uppercase text-[10px] rounded-2xl">Abort</button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {showBreakConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
-          <div className="bg-dark-card border border-indigo-500/50 p-8 rounded-[40px] shadow-2xl max-w-xs w-full text-center space-y-6 animate-in zoom-in-95">
-            <div className="mx-auto w-16 h-16 rounded-full bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400"><Coffee size={32} /></div>
-            <div className="space-y-2">
-              <h3 className="text-xl font-black italic uppercase text-white">{userState.isOnMaintenance ? 'Resume Ops?' : 'Initiate Break?'}</h3>
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
-                {userState.isOnMaintenance 
-                  ? 'Ready to get back to the hunt? Survival depends on volume.' 
-                  : 'Breaks are for maintenance. Ensure your systems are solid before resting.'}
-              </p>
-            </div>
-            <div className="flex flex-col space-y-2">
-              <button onClick={() => { onToggleInfra(!userState.isOnMaintenance); setShowBreakConfirm(false); }} className="w-full py-4 bg-indigo-600 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-lg">
-                {userState.isOnMaintenance ? 'End Break' : 'Start Break'}
-              </button>
-              <button onClick={() => setShowBreakConfirm(false)} className="w-full py-4 bg-white/5 text-gray-600 font-black uppercase text-[10px] rounded-2xl">Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-const YouScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
+const YouScreen: React.FC<{ userState: UserState; onUpdateProfile: (bio?: string, photo?: string) => void }> = ({ userState, onUpdateProfile }) => {
   type TimeFrame = 'WEEK' | 'MONTH' | 'YEAR' | 'ALL';
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('MONTH');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [displayName, setDisplayNameState] = useState(getDisplayName);
+  const [editingProfile, setEditingProfile] = useState(false);
   const [editingName, setEditingName] = useState(false);
+  const [editingBio, setEditingBio] = useState(false);
+  const [bioInput, setBioInput] = useState(userState.profileBio || '');
   const [followLinkCopied, setFollowLinkCopied] = useState(false);
+  const photoInputRef = React.useRef<HTMLInputElement>(null);
 
   const weekData = useMemo(() => {
     const days = [];
@@ -675,10 +481,12 @@ const YouScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
       const dateStr = d.toLocaleDateString('en-CA');
-      days.push({ date: dateStr, uvs: userState.dailyUvs[dateStr] || 0, isFocus: !!userState.dailyInfrastructureFocus[dateStr], isShipped: !!userState.dailyShipped[dateStr], isToday: dateStr === now.toLocaleDateString('en-CA') });
+      const post = userState.dailyInputPost?.[dateStr];
+      const firstNote = userState.dailyFirstNote?.[dateStr] || (post ? post.split(/\n/)[0]?.trim().slice(0, 80) : undefined);
+      days.push({ date: dateStr, hours: userState.dailyHours?.[dateStr] ?? (userState.dailyUvs?.[dateStr] ? userState.dailyUvs[dateStr] * 0.5 : 0), isFocus: !!userState.dailyInfrastructureFocus[dateStr], firstNote, isToday: dateStr === now.toLocaleDateString('en-CA') });
     }
     return days;
-  }, [userState.dailyUvs, userState.dailyInfrastructureFocus, userState.dailyShipped]);
+  }, [userState.dailyHours, userState.dailyInfrastructureFocus, userState.dailyFirstNote, userState.dailyInputPost]);
 
   const monthData = useMemo(() => {
     const days = [];
@@ -687,14 +495,16 @@ const YouScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
       const dateStr = d.toLocaleDateString('en-CA');
-      days.push({ date: dateStr, uvs: userState.dailyUvs[dateStr] || 0, isFocus: !!userState.dailyInfrastructureFocus[dateStr], isShipped: !!userState.dailyShipped[dateStr], isToday: dateStr === now.toLocaleDateString('en-CA') });
+      const post = userState.dailyInputPost?.[dateStr];
+      const firstNote = userState.dailyFirstNote?.[dateStr] || (post ? post.split(/\n/)[0]?.trim().slice(0, 80) : undefined);
+      days.push({ date: dateStr, hours: userState.dailyHours?.[dateStr] ?? (userState.dailyUvs?.[dateStr] ? userState.dailyUvs[dateStr] * 0.5 : 0), isFocus: !!userState.dailyInfrastructureFocus[dateStr], firstNote, isToday: dateStr === now.toLocaleDateString('en-CA') });
     }
     return days;
-  }, [userState.dailyUvs, userState.dailyInfrastructureFocus, userState.dailyShipped]);
+  }, [userState.dailyHours, userState.dailyInfrastructureFocus, userState.dailyFirstNote, userState.dailyInputPost]);
 
   const yearGroups = useMemo(() => {
     const years: Record<number, { name: string, days: any[] }[]> = {};
-    const merged = Array.from(new Set([...Object.keys(userState.dailyUvs), ...Object.keys(userState.dailyInfrastructureFocus), ...Object.keys(userState.dailyShipped)]));
+    const merged = Array.from(new Set([...Object.keys(userState.dailyHours || {}), ...Object.keys(userState.dailyInfrastructureFocus), ...Object.keys(userState.dailyFirstNote || {})]));
     const startYear = merged.length > 0 ? Math.min(...merged.map(d => new Date(d).getFullYear())) : new Date().getFullYear();
     const endYear = new Date().getFullYear();
     for (let y = endYear; y >= startYear; y--) {
@@ -705,7 +515,9 @@ const YouScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
         const monthName = d.toLocaleDateString('en-US', { month: 'short' });
         while (d.getMonth() === m) {
           const dateStr = d.toLocaleDateString('en-CA');
-          monthDays.push({ date: dateStr, uvs: userState.dailyUvs[dateStr] || 0, isFocus: !!userState.dailyInfrastructureFocus[dateStr], isShipped: !!userState.dailyShipped[dateStr] });
+          const post = userState.dailyInputPost?.[dateStr];
+          const firstNote = userState.dailyFirstNote?.[dateStr] || (post ? post.split(/\n/)[0]?.trim().slice(0, 80) : undefined);
+          monthDays.push({ date: dateStr, hours: userState.dailyHours?.[dateStr] ?? (userState.dailyUvs?.[dateStr] ? userState.dailyUvs[dateStr] * 0.5 : 0), isFocus: !!userState.dailyInfrastructureFocus[dateStr], firstNote });
           d.setDate(d.getDate() + 1);
         }
         months.push({ name: monthName, days: monthDays });
@@ -713,7 +525,7 @@ const YouScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
       years[y] = months;
     }
     return years;
-  }, [userState.dailyUvs, userState.dailyInfrastructureFocus, userState.dailyShipped]);
+  }, [userState.dailyHours, userState.dailyInfrastructureFocus, userState.dailyFirstNote, userState.dailyInputPost]);
 
   const yearsAvailable = Object.keys(yearGroups).map(Number).sort((a, b) => b - a);
   const stats = userState.stats;
@@ -721,16 +533,51 @@ const YouScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
   return (
     <div className="space-y-6 pb-20 animate-in fade-in duration-500">
       <div className="bg-dark-card border border-white/10 rounded-3xl p-5 space-y-4">
-        <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Profile</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Profile</h3>
+          <button onClick={() => { if (editingProfile) { setEditingName(false); setEditingBio(false); setEditingProfile(false); } else { setBioInput(userState.profileBio || ''); setEditingProfile(true); } }} className="px-4 py-1.5 rounded-full border border-white/30 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-white/5 transition-colors">
+            {editingProfile ? 'Done' : 'Edit profile'}
+          </button>
+        </div>
+        <div className="flex items-start gap-4">
+          <button type="button" onClick={() => editingProfile && photoInputRef.current?.click()} className={`flex-shrink-0 w-16 h-16 rounded-2xl bg-black/60 border overflow-hidden flex items-center justify-center transition-colors ${editingProfile ? 'border-brand/30 hover:border-brand/50 cursor-pointer' : 'border-white/10 cursor-default'}`}>
+            {userState.profilePhoto ? (
+              <img src={userState.profilePhoto} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <User size={28} className="text-gray-600" />
+            )}
+          </button>
+          <input type="file" ref={photoInputRef} accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = () => onUpdateProfile(userState.profileBio, r.result as string); r.readAsDataURL(f); } e.target.value = ''; }} />
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Name</p>
+            {editingProfile && editingName ? (
+              <div className="flex gap-2">
+                <input type="text" value={displayName} onChange={(e) => setDisplayNameState(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (setDisplayName(displayName), setEditingName(false))} className="flex-1 bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-white text-sm font-bold outline-none focus:border-brand/50" autoFocus />
+                <button onClick={() => { setDisplayName(displayName); setEditingName(false); }} className="px-4 py-2 bg-brand text-white rounded-xl font-bold">Save</button>
+              </div>
+            ) : (
+              <button onClick={() => editingProfile && setEditingName(true)} className={`text-white font-bold ${!editingProfile && 'cursor-default'}`}>{displayName}</button>
+            )}
+            {editingProfile && <p className="text-[9px] text-gray-500 mt-1">Tap photo to change</p>}
+          </div>
+        </div>
         <div>
-          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Display name</p>
-          {editingName ? (
-            <div className="flex gap-2">
-              <input type="text" value={displayName} onChange={(e) => setDisplayNameState(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (setDisplayName(displayName), setEditingName(false))} className="flex-1 bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-white text-sm font-bold outline-none focus:border-brand/50" autoFocus />
-              <button onClick={() => { setDisplayName(displayName); setEditingName(false); }} className="px-4 py-2 bg-brand text-white rounded-xl font-bold">Save</button>
+          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Bio</p>
+          {editingProfile && editingBio ? (
+            <div className="space-y-2">
+              <textarea value={bioInput} onChange={(e) => setBioInput(e.target.value.slice(0, 120))} maxLength={120} rows={3} placeholder="A short line about you..." className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-white text-sm font-bold placeholder:text-gray-600 outline-none focus:border-brand/50 resize-none" autoFocus />
+              <div className="flex justify-between items-center">
+                <span className="text-[9px] text-gray-500">{bioInput.length}/120</span>
+                <div className="flex gap-2">
+                  <button onClick={() => { setBioInput(userState.profileBio || ''); setEditingBio(false); }} className="px-3 py-1.5 bg-white/5 text-gray-500 rounded-lg text-xs font-bold">Cancel</button>
+                  <button onClick={() => { onUpdateProfile(bioInput.trim() || undefined, userState.profilePhoto); setEditingBio(false); }} className="px-3 py-1.5 bg-brand text-white rounded-lg text-xs font-bold">Save</button>
+                </div>
+              </div>
             </div>
           ) : (
-            <button onClick={() => setEditingName(true)} className="text-white font-bold">{displayName}</button>
+            <button onClick={() => editingProfile && (setBioInput(userState.profileBio || ''), setEditingBio(true))} className={`w-full text-left py-2 px-0 ${!editingProfile && 'cursor-default'}`}>
+              {userState.profileBio ? <span className="text-gray-300 text-sm">{userState.profileBio}</span> : <span className="text-gray-500 text-sm italic">{editingProfile ? 'Add a short bio...' : 'No bio yet'}</span>}
+            </button>
           )}
         </div>
         <div>
@@ -741,13 +588,6 @@ const YouScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
           </button>
           <p className="text-[9px] text-gray-500 mt-1">Share this link so others can follow your progress</p>
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <StatCard icon={<Globe className="text-brand" size={18} />} label="Total Units" value={stats.totalUniqueVisitors.toLocaleString()} desc="Lifetime Traffic" />
-        <StatCard icon={<Flame className="text-brand" size={18} />} label="Streak" value={userState.streak} desc="Active Survival" />
-        <StatCard icon={<Target className="text-brand" size={18} />} label="Avg Daily" value={stats.avgUvPerDay} desc="Acq Velocity" />
-        <StatCard icon={<TrendingUp className="text-brand" size={18} />} label="Conv Rate" value={`${stats.conversionResilience}%`} desc="Efficiency" />
       </div>
 
       <div className="flex flex-col">
@@ -787,16 +627,24 @@ const YouScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
                 <div key={idx} className="space-y-2">
                   <span className="text-[8px] font-black text-brand/40 uppercase tracking-[0.2em] block text-center border-b border-white/5 pb-1">{m.name}</span>
                   <div className="grid grid-cols-7 gap-0.5">
-                    {m.days.map((d, dIdx) => (
-                      <div key={dIdx} className="aspect-square rounded-[1px] flex items-center justify-center relative overflow-hidden" style={getHeatmapColor(d.uvs, d.isFocus, d.isShipped)}>
+                    {m.days.map((d, dIdx) => {
+                        const hasActivity = (d.hours || 0) > 0 || !!d.firstNote;
+                        const style = getHeatmapColor(d.hours || 0, d.isFocus, hasActivity);
+                        return (
+                      <div key={dIdx} className="aspect-square rounded-[1px] flex items-center justify-center relative overflow-visible group/cell cursor-default" style={style}>
                         {d.isFocus ? <Coffee size={4} className="text-indigo-200 opacity-50" /> : (
                           <div className="relative w-full h-full flex items-center justify-center">
-                            {d.isShipped && <Check className={`absolute -top-1 -right-1 ${getHeatmapColor(d.uvs, d.isFocus, d.isShipped).color === '#000' ? 'text-black' : 'text-white'}`} size={6} strokeWidth={4} />}
-                            {d.uvs > 0 && <span className="text-[6px] font-black tabular-nums scale-75 leading-none">{d.uvs}</span>}
+                            {(hasActivity || d.firstNote) && <span className="text-[6px] font-black tabular-nums scale-75 leading-none">{(d.hours || 0).toFixed(2)}</span>}
+                          </div>
+                        )}
+                        {d.firstNote && (
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 px-1.5 py-1 rounded bg-black/95 border border-white/10 shadow-xl opacity-0 group-hover/cell:opacity-100 transition-opacity duration-200 z-20 pointer-events-none max-w-[80px] text-[5px] text-white font-medium text-center leading-tight line-clamp-2">
+                            {d.firstNote}
                           </div>
                         )}
                       </div>
-                    ))}
+                        );
+                    })}
                   </div>
                 </div>
               ))}
@@ -805,22 +653,11 @@ const YouScreen: React.FC<{ userState: UserState }> = ({ userState }) => {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h3 className="text-brand font-black text-xs uppercase px-1 tracking-widest flex items-center space-x-2"><Award size={14} /><span>Survival Milestones</span></h3>
-        <div className="space-y-3">
-          {userState.achievements.map(ach => (
-            <div key={ach.id} className={`p-5 rounded-3xl border transition-all ${ach.unlocked ? 'bg-dark-card border-brand/40 shadow-xl' : 'bg-black border-white/5 opacity-50'}`}>
-              <div className="flex items-center space-x-4">
-                <div className={`text-3xl w-14 h-14 flex items-center justify-center rounded-2xl bg-black border ${ach.unlocked ? 'border-brand shadow-md' : 'border-gray-800'}`}>{ach.icon}</div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-center mb-1"><h4 className="font-black text-white uppercase text-sm italic">{ach.title}</h4><span className="text-[10px] font-bold text-brand/80">{ach.progress}/{ach.target}</span></div>
-                  <p className="text-[10px] text-gray-500 font-medium mb-3">{ach.description}</p>
-                  <div className="w-full h-1 bg-black rounded-full overflow-hidden border border-white/5"><div className={`h-full transition-all duration-1000 ${ach.unlocked ? 'bg-brand' : 'bg-gray-800'}`} style={{ width: `${Math.min(100, (ach.progress / ach.target) * 100)}%` }}></div></div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="grid grid-cols-2 gap-4">
+        <StatCard icon={<Globe className="text-brand" size={18} />} label="Total Units" value={stats.totalUniqueVisitors.toLocaleString()} desc="Lifetime Traffic" />
+        <StatCard icon={<Flame className="text-brand" size={18} />} label="Streak" value={userState.streak} desc="Active Survival" />
+        <StatCard icon={<Target className="text-brand" size={18} />} label="Avg Daily" value={stats.avgUvPerDay} desc="Acq Velocity" />
+        <StatCard icon={<TrendingUp className="text-brand" size={18} />} label="Conv Rate" value={`${stats.conversionResilience}%`} desc="Efficiency" />
       </div>
     </div>
   );

@@ -1,10 +1,11 @@
-import type { Group, GroupMember, UserState, FollowedPerson, Kudos, Challenge } from '../types';
+import type { Group, GroupMember, UserState, FollowedPerson, Kudos, Challenge, ActivityComment } from '../types';
 
 const STATE_KEY = 'deadbydefault_state_v1';
 const GROUPS_KEY = 'dbd_groups_v2';
 const FOLLOWING_KEY = 'dbd_following_v1';
 const DISPLAY_NAME_KEY = 'dbd_display_name';
 const KUDOS_KEY = 'dbd_kudos_v1';
+const COMMENTS_KEY = 'dbd_comments_v1';
 const CHALLENGES_KEY = 'dbd_challenges_v1';
 const DISCOVERY_LIST_KEY = 'dbd_discovery_list_v1';
 
@@ -216,6 +217,40 @@ export function removeKudos(activityKey: string): void {
 
 export function hasKudos(activityKey: string): Kudos | undefined {
   return getKudos().find(k => k.activityKey === activityKey);
+}
+
+// --- Comments ---
+
+export function getComments(): Record<string, ActivityComment[]> {
+  const raw = localStorage.getItem(COMMENTS_KEY);
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+export function saveComments(comments: Record<string, ActivityComment[]>): void {
+  localStorage.setItem(COMMENTS_KEY, JSON.stringify(comments));
+}
+
+export function getCommentsForActivity(activityKey: string): ActivityComment[] {
+  return getComments()[activityKey] || [];
+}
+
+export function addComment(activityKey: string, text: string, author: string): void {
+  const comments = getComments();
+  const list = comments[activityKey] || [];
+  const comment: ActivityComment = {
+    id: 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9),
+    author,
+    text: text.trim().slice(0, 280),
+    timestamp: new Date().toISOString(),
+  };
+  list.push(comment);
+  comments[activityKey] = list;
+  saveComments(comments);
 }
 
 // --- Challenges ---

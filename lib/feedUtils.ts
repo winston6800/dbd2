@@ -1,10 +1,11 @@
 import type { FeedActivity, FollowedPerson, Group, UserState } from '../types';
 
-/** Build feed activities from following + groups (excluding self) */
+/** Build feed activities from following + groups (excluding self for ship/loops/break; including self for post) */
 export function buildFeedActivities(
   following: Record<string, FollowedPerson>,
   groups: Record<string, Group>,
-  currentUserName: string
+  currentUserName: string,
+  currentUserState?: UserState
 ): FeedActivity[] {
   const activities: FeedActivity[] = [];
   const today = new Date().toLocaleDateString('en-CA');
@@ -58,6 +59,26 @@ export function buildFeedActivities(
         });
       }
     }
+
+    const post = userState.dailyInputPost?.[today];
+    const hours = userState.dailyHours?.[today];
+    const postTime = userState.dailyPostTime?.[today];
+    if (post?.trim()) {
+      const key = `${personId}_${today}_post`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        activities.push({
+          id: key,
+          personId,
+          personName,
+          type: 'post',
+          date: today,
+          time: postTime,
+          note: post,
+          hours,
+        });
+      }
+    }
   };
 
   for (const p of Object.values(following)) {
@@ -70,11 +91,28 @@ export function buildFeedActivities(
     }
   }
 
+  if (currentUserState?.dailyInputPost?.[today]?.trim()) {
+    const key = `self_${today}_post`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      activities.push({
+        id: key,
+        personId: 'self',
+        personName: currentUserName,
+        type: 'post',
+        date: today,
+        time: currentUserState.dailyPostTime?.[today],
+        note: currentUserState.dailyInputPost[today],
+        hours: currentUserState.dailyHours?.[today],
+      });
+    }
+  }
+
   return activities.sort((a, b) => {
     const dateA = a.date;
     const dateB = b.date;
     if (dateA !== dateB) return dateB.localeCompare(dateA);
-    const typeOrder = { ship: 0, loops: 1, break: 2 };
+    const typeOrder = { ship: 0, loops: 1, break: 2, post: 3 };
     return typeOrder[a.type] - typeOrder[b.type];
   });
 }
