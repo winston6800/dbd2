@@ -98,8 +98,8 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ userState, onSave, o
   return (
     <div className="space-y-6 pb-20 animate-in fade-in duration-500">
       {(sessionPhase === 'running' || sessionPhase === 'paused') && (
-        <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center p-6 bg-black">
-          <div className="w-full max-w-sm flex flex-col items-center space-y-6 animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center p-6 bg-black overflow-y-auto">
+          <div className="w-full max-w-sm flex flex-col items-center space-y-5 animate-in fade-in duration-300">
             <div className="flex justify-between items-center w-full">
               <h3 className="text-white font-black text-xl italic uppercase tracking-tighter">
                 {sessionPhase === 'running' ? 'Recording' : 'Stopped'}
@@ -111,6 +111,9 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ userState, onSave, o
             </div>
             <div className="text-5xl font-black italic text-white tracking-tighter tabular-nums font-mono">
               {formatTime(stopwatchElapsed)}
+            </div>
+            <div className="w-full px-1 py-2 rounded-xl bg-brand/10 border border-brand/20 text-center">
+              <p className="text-sm font-bold text-white leading-snug">What&apos;s the most important thing you can do and why aren&apos;t you doing it?</p>
             </div>
             <div className="w-full space-y-2 text-left">
               <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Today&apos;s Inputs</p>
@@ -148,6 +151,13 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ userState, onSave, o
       <div className="flex flex-col">
         <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase">Record</h2>
         <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mt-1">Daily inputs → community feed</p>
+      </div>
+
+      <div className={`bg-dark-card border border-brand/20 rounded-2xl p-5 text-left ${userState.isOnMaintenance ? 'opacity-40' : ''}`}>
+        <p className="text-[10px] font-black text-brand uppercase tracking-widest mb-2">Before you start</p>
+        <p className="text-white font-bold text-lg leading-snug">
+          What&apos;s the most important thing you can do and why aren&apos;t you doing it?
+        </p>
       </div>
 
       <div className={`bg-gradient-to-br from-dark-accent to-black p-6 rounded-[32px] text-center space-y-6 border border-brand/20 shadow-2xl transition-all duration-500 ${userState.isOnMaintenance ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
