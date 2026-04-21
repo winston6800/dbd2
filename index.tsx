@@ -31,7 +31,10 @@ const AppGate: React.FC = () => {
 
   if (!user) return <AuthScreen />;
 
-  if (!subscription && !subscriptionLoading) return <SubscriptionGate />;
+  const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS ?? '').split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
+  const isAdmin = user.email && adminEmails.includes(user.email.toLowerCase());
+
+  if (!isAdmin && !subscription && !subscriptionLoading) return <SubscriptionGate />;
 
   if (subscriptionLoading) {
     return (
