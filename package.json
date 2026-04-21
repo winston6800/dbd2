@@ -11,15 +11,18 @@
     "test:run": "vitest run"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.104.0",
     "lucide-react": "^0.562.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "recharts": "^3.6.0"
+    "recharts": "^3.6.0",
+    "stripe": "^22.0.2"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^22.14.0",
+    "@vercel/node": "^5.7.12",
     "@vitejs/plugin-react": "^5.0.0",
     "happy-dom": "^20.6.1",
     "jsdom": "^27.0.1",

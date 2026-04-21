@@ -7,7 +7,8 @@ import { GroupsScreen } from './components/GroupsScreen';
 import { FeedSection } from './components/FeedScreen';
 import { DiscoveryScreen } from './components/DiscoveryScreen';
 import { RecordScreen } from './components/RecordScreen';
-import { RefreshCw, X, Flame, Calendar, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, User, Coffee, ArrowUp, Edit3, Globe, Zap, UserPlus, Copy, Mic } from 'lucide-react';
+import { useAuth } from './lib/auth';
+import { RefreshCw, X, Flame, Calendar, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, User, Coffee, ArrowUp, Edit3, Globe, Zap, UserPlus, Copy, Mic, LogOut, CreditCard, Loader } from 'lucide-react';
 
 const getHeatmapColor = (hours: number, isFocus?: boolean, hasActivity?: boolean) => {
   if (isFocus) return { backgroundColor: 'rgb(49, 46, 129)', border: '1px solid rgba(79, 70, 229, 0.4)', color: '#fff' };
@@ -590,6 +591,8 @@ const YouScreen: React.FC<{ userState: UserState; onUpdateProfile: (bio?: string
         </div>
       </div>
 
+      <BillingSection />
+
       <div className="flex flex-col">
         <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase leading-none">Field Analytics</h2>
         <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mt-1">Consistency & Retention Metrics</p>
@@ -658,6 +661,67 @@ const YouScreen: React.FC<{ userState: UserState; onUpdateProfile: (bio?: string
         <StatCard icon={<Flame className="text-brand" size={18} />} label="Streak" value={userState.streak} desc="Active Survival" />
         <StatCard icon={<Target className="text-brand" size={18} />} label="Avg Daily" value={stats.avgUvPerDay} desc="Acq Velocity" />
         <StatCard icon={<TrendingUp className="text-brand" size={18} />} label="Conv Rate" value={`${stats.conversionResilience}%`} desc="Efficiency" />
+      </div>
+    </div>
+  );
+};
+
+const BillingSection: React.FC = () => {
+  const { user, subscription, signOut } = useAuth();
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  const handleManageBilling = async () => {
+    setPortalLoading(true);
+    try {
+      const res = await fetch('/api/create-portal-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user!.id }),
+      });
+      const { url } = await res.json();
+      window.location.href = url;
+    } catch {
+      setPortalLoading(false);
+    }
+  };
+
+  const periodEnd = subscription?.current_period_end
+    ? new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : null;
+
+  return (
+    <div className="bg-dark-card border border-white/5 rounded-3xl p-5 space-y-4">
+      <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Account</h3>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <CreditCard size={14} className="text-brand" />
+            <span className="text-white text-sm font-bold">Pro — $20/mo</span>
+          </div>
+          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/20 text-green-400">
+            {subscription?.status ?? 'active'}
+          </span>
+        </div>
+        {periodEnd && (
+          <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">
+            Renews {periodEnd}
+          </p>
+        )}
+        <button
+          onClick={handleManageBilling}
+          disabled={portalLoading}
+          className="w-full py-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center space-x-2 text-white font-bold text-sm hover:bg-white/10 transition-colors disabled:opacity-50"
+        >
+          {portalLoading ? <Loader size={14} className="animate-spin" /> : <CreditCard size={14} />}
+          <span>{portalLoading ? 'Opening portal...' : 'Manage billing'}</span>
+        </button>
+        <button
+          onClick={signOut}
+          className="w-full py-3 rounded-xl flex items-center justify-center space-x-2 text-gray-500 font-bold text-sm hover:text-white transition-colors"
+        >
+          <LogOut size={14} />
+          <span>Sign out ({user?.email})</span>
+        </button>
       </div>
     </div>
   );
