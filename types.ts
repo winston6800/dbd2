@@ -117,5 +117,6 @@ export enum AppScreen {
   RECORD = 'RECORD',
   GROUPS = 'GROUPS',
   DISCOVER = 'DISCOVER',
-  YOU = 'YOU'
+  YOU = 'YOU',
+  VIDEO = 'VIDEO'
 }

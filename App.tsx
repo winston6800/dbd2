@@ -7,6 +7,7 @@ import { GroupsScreen } from './components/GroupsScreen';
 import { FeedSection } from './components/FeedScreen';
 import { DiscoveryScreen } from './components/DiscoveryScreen';
 import { RecordScreen } from './components/RecordScreen';
+import { VideoConverterScreen } from './components/VideoConverterScreen';
 import { useAuth } from './lib/auth';
 import { RefreshCw, X, Flame, Calendar, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, User, Coffee, ArrowUp, Edit3, Globe, Zap, UserPlus, Copy, Mic, LogOut, CreditCard, Loader } from 'lucide-react';
 
@@ -278,6 +279,9 @@ const App: React.FC = () => {
         )}
         {screen === AppScreen.YOU && (
           <YouScreen userState={userState} onUpdateProfile={(bio, photo) => setUserState(p => ({ ...p, ...(bio !== undefined && { profileBio: bio }), ...(photo !== undefined && { profilePhoto: photo }) }))} />
+        )}
+        {screen === AppScreen.VIDEO && (
+          <VideoConverterScreen userState={userState} currentUserName={getDisplayName()} />
         )}
 
         {joinModal && (

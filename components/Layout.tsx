@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { AppScreen } from '../types';
-import { Home, User, Skull, Users, Compass, CircleDot } from 'lucide-react';
+import { Home, User, Skull, Users, Compass, CircleDot, Film } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -62,11 +62,18 @@ const Layout: React.FC<LayoutProps> = ({ children, activeScreen, onNavigate, isO
           label="Groups"
           isOnBreak={isOnBreak}
         />
-        <NavButton 
-          active={activeScreen === AppScreen.YOU} 
+        <NavButton
+          active={activeScreen === AppScreen.YOU}
           onClick={() => onNavigate(AppScreen.YOU)}
           icon={<User size={20} />}
           label="You"
+          isOnBreak={isOnBreak}
+        />
+        <NavButton
+          active={activeScreen === AppScreen.VIDEO}
+          onClick={() => onNavigate(AppScreen.VIDEO)}
+          icon={<Film size={20} />}
+          label="Video"
           isOnBreak={isOnBreak}
         />
       </nav>
