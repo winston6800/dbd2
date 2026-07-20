@@ -15,13 +15,12 @@ export interface Subscription {
   created_at: string;
 }
 
-export async function getSubscription(userId: string): Promise<Subscription | null> {
+export async function getSubscription(userId: string): Promise<{ subscription: Subscription | null; error: string | null }> {
   const { data, error } = await supabase
     .from('subscriptions')
     .select('*')
     .eq('user_id', userId)
     .in('status', ['active', 'trialing'])
     .maybeSingle();
-  if (error) return null;
-  return data;
+  return { subscription: data, error: error?.message ?? null };
 }

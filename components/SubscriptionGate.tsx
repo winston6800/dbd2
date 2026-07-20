@@ -13,7 +13,7 @@ const FEATURES = [
 ];
 
 export const SubscriptionGate: React.FC = () => {
-  const { user, signOut, refreshSubscription, subscriptionLoading } = useAuth();
+  const { user, session, signOut, refreshSubscription, subscriptionLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,8 +23,7 @@ export const SubscriptionGate: React.FC = () => {
     try {
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user!.id, email: user!.email }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
       });
       if (!res.ok) throw new Error('Failed to create checkout session');
       const { url } = await res.json();

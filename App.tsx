@@ -667,7 +667,7 @@ const YouScreen: React.FC<{ userState: UserState; onUpdateProfile: (bio?: string
 };
 
 const BillingSection: React.FC = () => {
-  const { user, subscription, signOut } = useAuth();
+  const { user, session, subscription, signOut } = useAuth();
   const [portalLoading, setPortalLoading] = useState(false);
 
   const handleManageBilling = async () => {
@@ -675,8 +675,7 @@ const BillingSection: React.FC = () => {
     try {
       const res = await fetch('/api/create-portal-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user!.id }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
       });
       const { url } = await res.json();
       window.location.href = url;

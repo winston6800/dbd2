@@ -2,16 +2,17 @@ import React, { useState } from 'react';
 import { Skull, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 
-type Mode = 'login' | 'signup';
+type Mode = 'login' | 'signup' | 'reset';
 
 export const AuthScreen: React.FC = () => {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, resetPassword } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [signupDone, setSignupDone] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,6 +25,13 @@ export const AuthScreen: React.FC = () => {
         setError(error);
       } else {
         setSignupDone(true);
+      }
+    } else if (mode === 'reset') {
+      const { error } = await resetPassword(email);
+      if (error) {
+        setError(error);
+      } else {
+        setResetSent(true);
       }
     } else {
       const { error } = await signIn(email, password);
@@ -40,6 +48,21 @@ export const AuthScreen: React.FC = () => {
           <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Check your email</h2>
           <p className="text-gray-500 text-sm">We sent a confirmation link to <span className="text-white font-bold">{email}</span>. Click it to activate your account.</p>
           <button onClick={() => { setSignupDone(false); setMode('login'); }} className="text-brand text-sm font-bold hover:underline">
+            Back to login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (resetSent) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center p-6">
+        <div className="w-full max-w-sm text-center space-y-4">
+          <div className="text-5xl">📬</div>
+          <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Check your email</h2>
+          <p className="text-gray-500 text-sm">We sent a password reset link to <span className="text-white font-bold">{email}</span>.</p>
+          <button onClick={() => { setResetSent(false); setMode('login'); }} className="text-brand text-sm font-bold hover:underline">
             Back to login
           </button>
         </div>
@@ -71,19 +94,33 @@ export const AuthScreen: React.FC = () => {
                 className="w-full bg-white/5 border border-white/10 rounded-2xl pl-10 pr-4 py-4 text-white text-sm font-medium placeholder-gray-600 focus:outline-none focus:border-brand/50 focus:bg-white/8 transition-all"
               />
             </div>
-            <div className="relative">
-              <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                minLength={8}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl pl-10 pr-4 py-4 text-white text-sm font-medium placeholder-gray-600 focus:outline-none focus:border-brand/50 focus:bg-white/8 transition-all"
-              />
-            </div>
+            {mode !== 'reset' && (
+              <div className="relative">
+                <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl pl-10 pr-4 py-4 text-white text-sm font-medium placeholder-gray-600 focus:outline-none focus:border-brand/50 focus:bg-white/8 transition-all"
+                />
+              </div>
+            )}
           </div>
+
+          {mode === 'login' && (
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() => { setMode('reset'); setError(null); }}
+                className="text-gray-500 text-xs font-bold hover:underline hover:text-gray-400"
+              >
+                Forgot password?
+              </button>
+            </div>
+          )}
 
           {error && (
             <div className="flex items-start space-x-2 bg-red-500/10 border border-red-500/20 rounded-xl p-3">
@@ -101,7 +138,7 @@ export const AuthScreen: React.FC = () => {
               <span className="animate-pulse">...</span>
             ) : (
               <>
-                <span>{mode === 'login' ? 'Sign In' : 'Create Account'}</span>
+                <span>{mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Send Reset Link'}</span>
                 <ArrowRight size={16} />
               </>
             )}
@@ -109,18 +146,26 @@ export const AuthScreen: React.FC = () => {
         </form>
 
         <div className="text-center">
-          {mode === 'login' ? (
+          {mode === 'login' && (
             <p className="text-gray-500 text-xs">
               No account?{' '}
               <button onClick={() => { setMode('signup'); setError(null); }} className="text-brand font-bold hover:underline">
                 Sign up
               </button>
             </p>
-          ) : (
+          )}
+          {mode === 'signup' && (
             <p className="text-gray-500 text-xs">
               Already have an account?{' '}
               <button onClick={() => { setMode('login'); setError(null); }} className="text-brand font-bold hover:underline">
                 Sign in
+              </button>
+            </p>
+          )}
+          {mode === 'reset' && (
+            <p className="text-gray-500 text-xs">
+              <button onClick={() => { setMode('login'); setError(null); }} className="text-brand font-bold hover:underline">
+                Back to login
               </button>
             </p>
           )}

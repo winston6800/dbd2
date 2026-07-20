@@ -12,13 +12,17 @@ const supabase = createClient(
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { userId } = req.body as { userId: string };
-  if (!userId) return res.status(400).json({ error: 'Missing userId' });
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) return res.status(401).json({ error: 'Missing auth token' });
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  if (authError || !user) return res.status(401).json({ error: 'Invalid auth token' });
 
   const { data: sub } = await supabase
     .from('subscriptions')
     .select('stripe_customer_id')
-    .eq('user_id', userId)
+    .eq('user_id', user.id)
     .maybeSingle();
 
   if (!sub?.stripe_customer_id) return res.status(404).json({ error: 'No subscription found' });
