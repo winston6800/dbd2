@@ -144,6 +144,72 @@ body {
   padding-right: 6px;
 }
 
+/* ---------------------------------------------------------------------------
+   Responsive
+   The board is a fixed 800x640 composition by design, so rather than reflow it
+   (which would break the layout math the handoff specifies), it is scaled down
+   as a unit on narrow screens. Everything else reflows normally.
+   --------------------------------------------------------------------------- */
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+.mg-board-scaler {
+  width: 100%;
+  overflow: hidden;
+}
+
+.mg-board-fixed {
+  width: 800px;
+  transform-origin: top left;
+}
+
+/* Flex lives here rather than inline so the media query below can override it —
+   an inline style would always win. */
+.mg-terminal-input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The terminal bar is a single row on desktop. On narrow screens the label
+   claims row one so the input and button drop to row two together, instead of
+   the input squeezing down to a few characters. */
+@media (max-width: 640px) {
+  .mg-terminal {
+    flex-wrap: wrap;
+  }
+
+  .mg-terminal-label {
+    flex-basis: calc(100% - 18px);
+  }
+}
+
+.mg-landing-beats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .mg-landing-beats {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mg-hero-title {
+  font-size: 40px;
+  line-height: 1.1;
+}
+
+@media (max-width: 720px) {
+  .mg-hero-title {
+    font-size: 30px;
+  }
+}
+
 .mg-input::placeholder {
   color: #a09a8a;
 }

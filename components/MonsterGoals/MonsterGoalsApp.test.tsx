@@ -11,7 +11,27 @@ vi.mock('../../lib/auth', () => ({
   }),
 }));
 
+// No network in tests: the cloud read fails, so the board falls back to
+// localStorage — the same degraded path a user gets when they are offline.
+vi.mock('../../lib/supabase', () => ({
+  supabase: {
+    from: () => ({
+      select: () => ({
+        eq: () => ({ maybeSingle: async () => ({ data: null, error: { message: 'offline' } }) }),
+      }),
+      upsert: async () => ({ error: { message: 'offline' } }),
+    }),
+  },
+}));
+
 import { MonsterGoalsApp } from './MonsterGoalsApp';
+
+/** Board hydration is async now, so every test waits for the first paint. */
+async function mountApp() {
+  const utils = render(<MonsterGoalsApp />);
+  await screen.findByText(/Name your goal|No mini-bosses yet|mini-bosses defeated/);
+  return utils;
+}
 
 function summonGoal(name = 'Learn Spanish') {
   fireEvent.change(screen.getByPlaceholderText('Goal, e.g. Learn Spanish'), { target: { value: name } });
@@ -38,14 +58,14 @@ describe('MonsterGoalsApp', () => {
     vi.useRealTimers();
   });
 
-  it('lands new users on the Create Goal screen — no demo seed', () => {
-    render(<MonsterGoalsApp />);
+  it('lands new users on the Create Goal screen — no demo seed', async () => {
+    await mountApp();
     expect(screen.getByText('Name your goal')).toBeTruthy();
     expect(screen.queryByText(/Run a Marathon/)).toBeNull();
   });
 
-  it('summons a monster and shows the empty board', () => {
-    render(<MonsterGoalsApp />);
+  it('summons a monster and shows the empty board', async () => {
+    await mountApp();
     summonGoal();
 
     expect(screen.getByText('Learn Spanish')).toBeTruthy();
@@ -54,8 +74,8 @@ describe('MonsterGoalsApp', () => {
     expect(screen.queryByPlaceholderText('Enter task / target objective...')).toBeNull();
   });
 
-  it('checking a task deploys a Milk and takes 12 HP off the active boss', () => {
-    render(<MonsterGoalsApp />);
+  it('checking a task deploys a Milk and takes 12 HP off the active boss', async () => {
+    await mountApp();
     summonGoal();
     addSubBoss();
 
@@ -74,8 +94,8 @@ describe('MonsterGoalsApp', () => {
     expect(screen.getByText('MILK')).toBeTruthy();
   });
 
-  it('does not let a deployed task be un-checked', () => {
-    render(<MonsterGoalsApp />);
+  it('does not let a deployed task be un-checked', async () => {
+    await mountApp();
     summonGoal();
     addSubBoss();
     addTask('One-way trip');
@@ -88,8 +108,8 @@ describe('MonsterGoalsApp', () => {
     expect(screen.getByText('88/100 HP')).toBeTruthy();
   });
 
-  it('sorts undone tasks above deployed ones', () => {
-    render(<MonsterGoalsApp />);
+  it('sorts undone tasks above deployed ones', async () => {
+    await mountApp();
     summonGoal();
     addSubBoss();
     addTask('First');
@@ -102,9 +122,9 @@ describe('MonsterGoalsApp', () => {
     expect(within(rows[1] as HTMLElement).getByText('DEPLOYED')).toBeTruthy();
   });
 
-  it('defeats a boss at 0 HP and declares the goal complete', () => {
+  it('defeats a boss at 0 HP and declares the goal complete', async () => {
+    await mountApp();
     vi.useFakeTimers();
-    render(<MonsterGoalsApp />);
     summonGoal();
     addSubBoss('The only boss');
 
@@ -130,19 +150,19 @@ describe('MonsterGoalsApp', () => {
     expect(screen.getAllByText('✓')).toHaveLength(10);
   });
 
-  it('restores a saved board from storage on mount', () => {
-    const { unmount } = render(<MonsterGoalsApp />);
+  it('restores a saved board from storage on mount', async () => {
+    const { unmount } = await mountApp();
     summonGoal('Ship the thing');
     addSubBoss('Write the docs');
     unmount();
 
-    render(<MonsterGoalsApp />);
+    await mountApp();
     expect(screen.getByText('Ship the thing')).toBeTruthy();
     expect(screen.getByText('0 of 1 mini-bosses defeated')).toBeTruthy();
   });
 
-  it('scopes saved state to the signed-in user', () => {
-    render(<MonsterGoalsApp />);
+  it('scopes saved state to the signed-in user', async () => {
+    await mountApp();
     summonGoal('Private goal');
     expect(localStorage.getItem('monsterGoalsAppState:test-user')).toContain('Private goal');
     expect(localStorage.getItem('monsterGoalsAppState')).toBeNull();

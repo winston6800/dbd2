@@ -18,6 +18,7 @@ export const AddTaskBar: React.FC<{ onAdd: (text: string) => void }> = ({ onAdd 
   return (
     <form
       onSubmit={submit}
+      className="mg-terminal"
       style={{
         display: 'flex',
         gap: 10,
@@ -40,6 +41,7 @@ export const AddTaskBar: React.FC<{ onAdd: (text: string) => void }> = ({ onAdd 
         }}
       />
       <span
+        className="mg-terminal-label"
         style={{
           color: COLORS.terminalLabel,
           fontSize: 11,
@@ -56,8 +58,6 @@ export const AddTaskBar: React.FC<{ onAdd: (text: string) => void }> = ({ onAdd 
         onChange={e => setText(e.target.value)}
         placeholder="Enter task / target objective..."
         style={{
-          flex: 1,
-          minWidth: 0,
           background: COLORS.terminalInput,
           border: `1px solid ${COLORS.terminalLine}`,
           borderRadius: 2,

@@ -32,7 +32,7 @@ const pageStyle: React.CSSProperties = {
   color: COLORS.ink,
 };
 
-export const AuthScreen: React.FC = () => {
+export const AuthScreen: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { signIn, signUp } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
@@ -211,6 +211,25 @@ export const AuthScreen: React.FC = () => {
             {mode === 'login' ? 'Sign up' : 'Sign in'}
           </button>
         </div>
+
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              color: COLORS.metaText,
+              fontSize: 12,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              marginTop: -12,
+            }}
+          >
+            ← What is this?
+          </button>
+        )}
       </form>
     </div>
   );

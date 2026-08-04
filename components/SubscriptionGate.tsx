@@ -10,12 +10,13 @@ import { MonsterFace } from './MonsterGoals/MonsterFace';
  * before launch.
  */
 
+// Keep these honest — every line has to be true of what actually ships.
 const FEATURES = [
-  'Unlimited goals, mini-bosses and tasks',
+  'Unlimited mini-bosses and tasks',
   'Deploy Milk units and watch them fight',
-  'Your whole boss chain, saved and restored',
+  'Your boss chain saved and synced across devices',
   'Defeat animations and the graveyard trail',
-  'AI-named monsters for every goal',
+  'A named monster for every sub-goal',
 ];
 
 const pageStyle: React.CSSProperties = {

@@ -5,7 +5,9 @@ import { COLORS, DISPLAY_FONT, PAPER_BACKGROUND } from '../../lib/monster/tokens
 import { ACTIVE_BOSS_Y, GOAL_MONSTER_X, toViewBoxY } from '../../lib/monster/layout';
 import { aiMonsterName, localMonsterName } from '../../lib/monster/naming';
 import { loadState, saveState } from '../../lib/monster/storage';
+import { createBoardSaver, loadBoard } from '../../lib/monster/sync';
 import { uid } from '../../lib/monster/ids';
+import { BoardScaler } from './BoardScaler';
 import { useAuth } from '../../lib/auth';
 import { BattleBoard, type AttackFx } from './BattleBoard';
 import { CreateGoalScreen } from './CreateGoalScreen';
@@ -35,18 +37,52 @@ export const MonsterGoalsApp: React.FC = () => {
   }, []);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
-  // Restore this user's board. New users land on the Create Goal screen —
-  // there is no demo seed in production.
+  const saver = useRef<ReturnType<typeof createBoardSaver> | null>(null);
+
+  // Restore this user's board, cloud first. New users land on the Create Goal
+  // screen — there is no demo seed in production.
   useEffect(() => {
-    const saved = loadState(userId);
-    setGoal(saved?.goal ?? null);
-    setActiveIndex(saved?.activeIndex ?? 0);
-    setHydrated(true);
+    let cancelled = false;
+
+    // The board only mounts behind the auth gate, so there is normally a user.
+    // Fall back to a local-only load rather than showing an empty board if it
+    // is ever rendered without one.
+    if (!userId) {
+      const local = loadState(null);
+      setGoal(local?.goal ?? null);
+      setActiveIndex(local?.activeIndex ?? 0);
+      setHydrated(true);
+      return;
+    }
+
+    saver.current = createBoardSaver(userId);
+
+    void loadBoard(userId).then(saved => {
+      if (cancelled) return;
+      setGoal(saved?.goal ?? null);
+      setActiveIndex(saved?.activeIndex ?? 0);
+      setHydrated(true);
+    });
+
+    // A closing or backgrounded tab would otherwise drop a debounced write.
+    const flush = () => saver.current?.flush();
+    document.addEventListener('visibilitychange', flush);
+    window.addEventListener('pagehide', flush);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', flush);
+      window.removeEventListener('pagehide', flush);
+      saver.current?.flush();
+      saver.current = null;
+    };
   }, [userId]);
 
   const persist = useCallback(
     (nextGoal: Goal | null, nextIndex: number) => {
-      saveState(userId, { goal: nextGoal, activeIndex: nextIndex });
+      const state = { goal: nextGoal, activeIndex: nextIndex };
+      if (saver.current) saver.current.save(state);
+      else saveState(userId, state);
     },
     [userId],
   );
@@ -237,18 +273,20 @@ export const MonsterGoalsApp: React.FC = () => {
           </button>
         </div>
 
-        <BattleBoard
-          monsterName={goal.monsterName}
-          miniBosses={miniBosses}
-          activeIndex={safeIndex}
-          defeatingId={defeatingId}
-          allDefeated={allDefeated}
-          attackFx={attackFx}
-          hoverBossId={hoverBossId}
-          onHoverBoss={setHoverBossId}
-          onSelectBoss={selectBoss}
-          onAddBoss={() => setAddingBoss(true)}
-        />
+        <BoardScaler>
+          <BattleBoard
+            monsterName={goal.monsterName}
+            miniBosses={miniBosses}
+            activeIndex={safeIndex}
+            defeatingId={defeatingId}
+            allDefeated={allDefeated}
+            attackFx={attackFx}
+            hoverBossId={hoverBossId}
+            onHoverBoss={setHoverBossId}
+            onSelectBoss={selectBoss}
+            onAddBoss={() => setAddingBoss(true)}
+          />
+        </BoardScaler>
 
         {addingBoss && <AddBossForm onAdd={addBoss} />}
 

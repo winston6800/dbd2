@@ -20,6 +20,10 @@ interface MilkUnitProps {
   count: number;
   /** Active boss x position, as a percentage of board width. */
   bossX: number;
+  /** Orbit centre, in px from the top of the containing box. */
+  centerY?: number;
+  /** The landing-page demo shows cartons without task text. */
+  showLabel?: boolean;
 }
 
 /**
@@ -31,7 +35,15 @@ interface MilkUnitProps {
  * reverse so the carton itself stays upright. Both share the same negative
  * delay so they stay in lockstep.
  */
-export const MilkUnit: React.FC<MilkUnitProps> = ({ taskId, text, index, count, bossX }) => {
+export const MilkUnit: React.FC<MilkUnitProps> = ({
+  taskId,
+  text,
+  index,
+  count,
+  bossX,
+  centerY = ACTIVE_BOSS_Y,
+  showLabel = true,
+}) => {
   const v = charSum(taskId) % 4;
   const bodyTint = MILK_BODY_TINTS[v];
   const capTint = MILK_CAP_TINTS[v];
@@ -41,7 +53,7 @@ export const MilkUnit: React.FC<MilkUnitProps> = ({ taskId, text, index, count, 
   const outerStyle: CSSProperties = {
     position: 'absolute',
     left: `${bossX}%`,
-    top: ACTIVE_BOSS_Y,
+    top: centerY,
     width: 0,
     height: 0,
     zIndex: 4,
@@ -141,20 +153,22 @@ export const MilkUnit: React.FC<MilkUnitProps> = ({ taskId, text, index, count, 
             <div style={eyeStyle('right')} />
             <div style={mouthStyle} />
           </div>
-          <div
-            style={{
-              position: 'absolute',
-              left: '50%',
-              top: '100%',
-              marginTop: 4,
-              transform: 'translateX(-50%)',
-              width: 100,
-              textAlign: 'center',
-              fontSize: 11,
-            }}
-          >
-            {text}
-          </div>
+          {showLabel && (
+            <div
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: '100%',
+                marginTop: 4,
+                transform: 'translateX(-50%)',
+                width: 100,
+                textAlign: 'center',
+                fontSize: 11,
+              }}
+            >
+              {text}
+            </div>
+          )}
           <div
             style={{
               position: 'absolute',

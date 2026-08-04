@@ -1,9 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import './styles/monsterGoals.css';
 import { AuthProvider, useAuth } from './lib/auth';
 import { AuthScreen } from './components/AuthScreen';
 import { SubscriptionGate } from './components/SubscriptionGate';
+import { Landing } from './components/Landing';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { MonsterGoalsApp } from './components/MonsterGoals/MonsterGoalsApp';
 import { COLORS, PAPER_BACKGROUND } from './lib/monster/tokens';
 
@@ -25,10 +27,12 @@ const Splash: React.FC<{ label: string }> = ({ label }) => (
 
 /**
  * Hard gate: sign in, then subscribe, then the board. No part of the game is
- * reachable without both.
+ * reachable without both — logged-out visitors get the landing page, which
+ * explains the product and states the price before asking for an email.
  */
 const AppGate: React.FC = () => {
   const { user, subscription, loading, subscriptionLoading, refreshSubscription } = useAuth();
+  const [showAuth, setShowAuth] = useState(false);
 
   // Handle returning from Stripe checkout.
   useEffect(() => {
@@ -43,7 +47,13 @@ const AppGate: React.FC = () => {
 
   if (loading) return <Splash label="Waking the monsters…" />;
 
-  if (!user) return <AuthScreen />;
+  if (!user) {
+    return showAuth ? (
+      <AuthScreen onBack={() => setShowAuth(false)} />
+    ) : (
+      <Landing onStart={() => setShowAuth(true)} onSignIn={() => setShowAuth(true)} />
+    );
+  }
 
   const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS ?? '')
     .split(',')
@@ -68,8 +78,10 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <AuthProvider>
-      <AppGate />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppGate />
+      </AuthProvider>
+    </ErrorBoundary>
   </React.StrictMode>,
 );
