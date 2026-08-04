@@ -1,95 +1,87 @@
-# DeadByDefault - Growth Protocol
+# Monster Goals — functionality
 
-A survival-style growth tracker for founders and builders. Track daily loops, streaks, and ship status. Share progress with groups and followers via links—no backend or API keys required.
+## Access
 
-## Run Locally
+Two gates stand in front of the game, in order:
 
-```bash
-npm install
-npm run dev
+1. **Sign in** (`AuthScreen`) — email and password via Supabase. Sign-up sends a confirmation email;
+   the account is not usable until the link is clicked.
+2. **Subscribe** (`SubscriptionGate`) — $20/month via Stripe Checkout. On return from Checkout the app
+   waits 3 seconds for the webhook to land, then re-reads the subscription.
+
+Emails listed in `VITE_ADMIN_EMAILS` skip the second gate entirely.
+
+Signed-in users get an account row above the board: their email, **Manage billing** (Stripe customer
+portal, shown only when a subscription exists), and **Sign out**.
+
+## Screens
+
+### Create Goal (empty state)
+First run. A floating monster, a text field, and **Summon Monster**. Naming a goal creates
+`{ name, monsterName, miniBosses: [] }` and reveals the board. New users always land here — there is
+no demo data.
+
+### Battle Board
+The working view. Top to bottom:
+
+- **Header** — goal name and progress (`"{n} of {total} mini-bosses defeated"`, or
+  `"No mini-bosses yet — add one to begin"`), plus **+ New Sub-Boss**.
+- **Board** (800×640) — the goal monster looming at the top, the active mini-boss centred, upcoming
+  bosses stacked and blurred on the right, defeated bosses in a faded trail along the bottom, all
+  chained by connector lines. Milk units orbit the active boss.
+- **Add-sub-boss form** — appears inline while adding.
+- **Add-task bar** — a dark terminal strip labelled `QUEUE ORDER`.
+- **Task queue** — the checklist for the active boss, undone tasks first.
+- **Victory banner** — once every mini-boss is defeated.
+
+## Interactions
+
+1. **Add a sub-boss.** Both **+ New Sub-Boss** and the dashed `+` node on the board open the same
+   inline form. The new boss is inserted at `activeIndex + 1` — mid-chain, never as a branch — with
+   100 HP and no tasks. If it is the first one, it becomes active.
+2. **Add a task.** Appended to the active boss's list via the terminal bar.
+3. **Complete a task** — the core loop. Checking an unchecked box:
+   - marks the task done and takes `MILK_DMG = 12` HP off the active boss (floored at 0),
+   - spawns a hit particle at the boss (600ms),
+   - adds a Milk unit to the orbit, which fires pellets from then on.
+
+   Pellets are decorative — they never apply damage. Completed tasks cannot be un-checked; deploying
+   a Milk is one-way.
+4. **Boss defeat.** At 0 HP the boss is marked defeated and plays the 1300ms `bossDefeat` animation at
+   full size and centre. After it finishes the board advances to the first non-defeated boss and the
+   old boss re-renders into the graveyard trail. Its Milks go with it.
+5. **Select a boss.** Clicking any node makes it active; its tasks load into the queue.
+6. **Hover a boss.** Shows the sub-goal text the user actually typed, as a dark tooltip.
+7. **Monster naming.** Names are generated from the goal text: the longest non-stopword root,
+   truncated to 6 characters and capitalised, plus a hash-picked suffix and title — e.g. "Build base
+   mileage" becomes "Mileagoloth the Endless". Deterministic, so the same text always yields the same
+   name. An AI-generated name can replace it asynchronously; it never blocks the UI.
+
+Not implemented, by design: editing or deleting goals, bosses or tasks; un-checking; multiple goals
+per account; mobile layout.
+
+## State
+
+```
+goal: { name, monsterName, miniBosses: [ { id, name, goalText, maxHp, hp, defeated, tasks: [ { id, text, size, done } ] } ] } | null
+activeIndex, addingBoss, attackFx, defeatingId, hoverBossId
 ```
 
-Open http://localhost:3000
+Everything else — defeated count, all-defeated flag, node positions, connector lines, the Milk list,
+checklist order — is derived at render time, never stored.
 
-No API keys or environment variables needed.
+`{ goal, activeIndex }` is written to `localStorage` under `monsterGoalsAppState:<userId>` after every
+mutation and restored on mount. Ids come from `lib/monster/ids.ts` and must never change once
+assigned: each monster's face, each carton's tint, and each unit's firing pattern are hashes of the id,
+so a changed id changes how things look.
 
----
+## Determinism
 
-## Core Features
+Four things are keyed off a character-sum hash, so the board looks stable across reloads:
 
-### Command (Home)
-- **Survival Pulse** – Heatmap of the last 7 days (loops, shipped, break days)
-- **Growth Objective** – Editable goal (e.g. "INCREASE DAILY UNIQUE VISITORS")
-- **Website** – Optional link to your project
-- **Growth Terminal** – +/- buttons to log daily loops
-- **Honor Code Entry** – Mark whether you shipped something today
-- **Take a Break** – Toggle maintenance/recovery mode (doesn’t break streak)
-
-### Analytics
-- Total units, streak, avg daily, conversion rate
-- Achievement progress (Survival Instinct, Default Alive, Network Effect, First Mover)
-
-### Profile
-- **Display name** – Used in groups and when others follow you
-- **Copy follow link** – Share a link so others can follow your progress
-- **Field Analytics** – Heatmap views (week, month, year, all time)
-
----
-
-## Groups
-
-### Create a Group
-1. Go to **Groups**
-2. Tap **Create Group**
-3. Enter a name
-4. Tap **Copy link** and share it
-
-### Join a Group
-1. Open the shared link (e.g. `https://yoursite.com?join=...`)
-2. Enter your name
-3. Tap **Join**
-
-### How It Works
-- Group data is encoded in the URL
-- When someone joins, they’re added to the group
-- Share the updated link back to the creator so they see new members
-- Visiting a join link again updates the group with the latest data
-
----
-
-## Following
-
-### Share Your Profile
-1. Go to **Profile**
-2. Tap **Copy follow link**
-3. Share the link (e.g. `https://yoursite.com?follow=...`)
-
-### Follow Someone
-1. Open their follow link
-2. Tap **Follow**
-
-### How It Works
-- Follow links encode your name and current progress
-- Followers see your streak, shipped status, and total loops
-- Share a new link to update your data for followers
-- Unfollow via the X button in the Following list
-
----
-
-## Data Storage
-
-- All data is stored in **localStorage**
-- No backend, database, or API keys
-- Data stays on the device
-
----
-
-## Scripts
-
-| Command       | Description              |
-|---------------|--------------------------|
-| `npm run dev` | Start dev server         |
-| `npm run build` | Production build      |
-| `npm run preview` | Preview production build |
-| `npm run test` | Run tests (watch mode)   |
-| `npm run test:run` | Run tests once        |
+| Hash of | Picks |
+|---|---|
+| boss id + index | one of 4 face variants |
+| task id | one of 4 carton body/cap tints |
+| task id | one of 4 carton expressions |
+| task id | one of 4 pellet firing patterns |

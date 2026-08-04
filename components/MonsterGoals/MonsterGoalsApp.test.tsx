@@ -1,0 +1,150 @@
+import React from 'react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+// Mocked so the test never constructs a real Supabase client.
+vi.mock('../../lib/auth', () => ({
+  useAuth: () => ({
+    user: { id: 'test-user', email: 'player@example.com' },
+    subscription: null,
+    signOut: vi.fn(),
+  }),
+}));
+
+import { MonsterGoalsApp } from './MonsterGoalsApp';
+
+function summonGoal(name = 'Learn Spanish') {
+  fireEvent.change(screen.getByPlaceholderText('Goal, e.g. Learn Spanish'), { target: { value: name } });
+  fireEvent.click(screen.getByRole('button', { name: 'Summon Monster' }));
+}
+
+function addSubBoss(text = 'Finish unit one') {
+  fireEvent.click(screen.getByRole('button', { name: '+ New Sub-Boss' }));
+  fireEvent.change(screen.getByPlaceholderText('Sub-goal, e.g. Run 20 miles a week'), { target: { value: text } });
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+}
+
+function addTask(text: string) {
+  fireEvent.change(screen.getByPlaceholderText('Enter task / target objective...'), { target: { value: text } });
+  fireEvent.click(screen.getByRole('button', { name: '+ ADD' }));
+}
+
+describe('MonsterGoalsApp', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('lands new users on the Create Goal screen — no demo seed', () => {
+    render(<MonsterGoalsApp />);
+    expect(screen.getByText('Name your goal')).toBeTruthy();
+    expect(screen.queryByText(/Run a Marathon/)).toBeNull();
+  });
+
+  it('summons a monster and shows the empty board', () => {
+    render(<MonsterGoalsApp />);
+    summonGoal();
+
+    expect(screen.getByText('Learn Spanish')).toBeTruthy();
+    expect(screen.getByText('No mini-bosses yet — add one to begin')).toBeTruthy();
+    // The task bar only appears once there is a boss to fight.
+    expect(screen.queryByPlaceholderText('Enter task / target objective...')).toBeNull();
+  });
+
+  it('checking a task deploys a Milk and takes 12 HP off the active boss', () => {
+    render(<MonsterGoalsApp />);
+    summonGoal();
+    addSubBoss();
+
+    expect(screen.getByText('100/100 HP')).toBeTruthy();
+    expect(screen.getByText('0 of 1 mini-bosses defeated')).toBeTruthy();
+
+    addTask('Learn 20 verbs');
+    expect(screen.getByText('0 deployed · 1 in queue')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Learn 20 verbs' }));
+
+    expect(screen.getByText('88/100 HP')).toBeTruthy();
+    expect(screen.getByText('DEPLOYED')).toBeTruthy();
+    expect(screen.getByText('1 deployed · 0 in queue')).toBeTruthy();
+    // The Milk unit is now orbiting, badge and all.
+    expect(screen.getByText('MILK')).toBeTruthy();
+  });
+
+  it('does not let a deployed task be un-checked', () => {
+    render(<MonsterGoalsApp />);
+    summonGoal();
+    addSubBoss();
+    addTask('One-way trip');
+
+    const box = screen.getByRole('checkbox', { name: 'One-way trip' });
+    fireEvent.click(box);
+    expect(screen.getByText('88/100 HP')).toBeTruthy();
+
+    fireEvent.click(box);
+    expect(screen.getByText('88/100 HP')).toBeTruthy();
+  });
+
+  it('sorts undone tasks above deployed ones', () => {
+    render(<MonsterGoalsApp />);
+    summonGoal();
+    addSubBoss();
+    addTask('First');
+    addTask('Second');
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'First' }));
+
+    const rows = document.querySelectorAll('.mg-scroll .mg-row');
+    expect(within(rows[0] as HTMLElement).getByText('IN QUEUE')).toBeTruthy();
+    expect(within(rows[1] as HTMLElement).getByText('DEPLOYED')).toBeTruthy();
+  });
+
+  it('defeats a boss at 0 HP and declares the goal complete', () => {
+    vi.useFakeTimers();
+    render(<MonsterGoalsApp />);
+    summonGoal();
+    addSubBoss('The only boss');
+
+    // 100 HP at 12 HP a task — the ninth task is the killing blow.
+    for (let i = 0; i < 9; i++) addTask(`Task ${i}`);
+    for (let i = 0; i < 9; i++) {
+      fireEvent.click(screen.getByRole('checkbox', { name: `Task ${i}` }));
+    }
+
+    expect(screen.getByText('1 of 1 mini-bosses defeated')).toBeTruthy();
+    expect(screen.getByText(/has been fully defeated! Goal complete\./)).toBeTruthy();
+
+    // Mid-animation the boss keeps its face: the nine ✓ glyphs on screen are
+    // the deployed task rows, not the graveyard marker.
+    expect(screen.getAllByText('✓')).toHaveLength(9);
+
+    // The defeat animation runs for 1300ms before the board advances and the
+    // boss drops into the graveyard trail as a ✓.
+    act(() => {
+      vi.advanceTimersByTime(1300);
+    });
+
+    expect(screen.getAllByText('✓')).toHaveLength(10);
+  });
+
+  it('restores a saved board from storage on mount', () => {
+    const { unmount } = render(<MonsterGoalsApp />);
+    summonGoal('Ship the thing');
+    addSubBoss('Write the docs');
+    unmount();
+
+    render(<MonsterGoalsApp />);
+    expect(screen.getByText('Ship the thing')).toBeTruthy();
+    expect(screen.getByText('0 of 1 mini-bosses defeated')).toBeTruthy();
+  });
+
+  it('scopes saved state to the signed-in user', () => {
+    render(<MonsterGoalsApp />);
+    summonGoal('Private goal');
+    expect(localStorage.getItem('monsterGoalsAppState:test-user')).toContain('Private goal');
+    expect(localStorage.getItem('monsterGoalsAppState')).toBeNull();
+  });
+});

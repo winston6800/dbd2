@@ -1,0 +1,153 @@
+/* Monster Goals — animation timings are exact per the design handoff. */
+
+* {
+  box-sizing: border-box;
+  font-family: 'Nunito', sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #f3f0e8;
+  color: #2b2b2b;
+}
+
+/* ±8px vertical bob. The plain variant is for translate-centred nodes, which
+   already carry a -50% X offset that the keyframe has to preserve. */
+@keyframes floatIdle {
+  0%,
+  100% {
+    transform: translate(-50%, 0);
+  }
+  50% {
+    transform: translate(-50%, -8px);
+  }
+}
+
+@keyframes floatIdleNoX {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* Drives both the orbit arm and, reversed, the counter-rotation wrapper that
+   keeps each Milk carton upright. */
+@keyframes orbitSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes bossDefeat {
+  0% {
+    transform: translate(-50%, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  10% {
+    transform: translate(-50%, 0) rotate(-7deg) scale(1);
+    opacity: 1;
+  }
+  22% {
+    transform: translate(-50%, 0) rotate(7deg) scale(1.03);
+    opacity: 1;
+  }
+  34% {
+    transform: translate(-50%, 0) rotate(-7deg) scale(1);
+    opacity: 1;
+  }
+  46% {
+    transform: translate(-50%, 0) rotate(7deg) scale(1.05);
+    opacity: 1;
+  }
+  60% {
+    transform: translate(-50%, 0) rotate(0deg) scale(1.12);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -40px) rotate(0deg) scale(0.6);
+    opacity: 0.22;
+  }
+}
+
+@keyframes pelletToCenter {
+  0% {
+    transform: translate(-50%, -50%) translateY(0) scale(1);
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translateY(150px) scale(0.3);
+    opacity: 0;
+  }
+}
+
+@keyframes pelletSpin {
+  0% {
+    transform: translate(-50%, -50%) translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translateY(150px) rotate(540deg) scale(0.4);
+    opacity: 0;
+  }
+}
+
+@keyframes pelletWobble {
+  0% {
+    transform: translate(-50%, -50%) translateY(0) scale(0.7);
+    opacity: 1;
+  }
+  40% {
+    transform: translate(-50%, -50%) translateY(62px) scale(1.25);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translateY(150px) scale(0.5);
+    opacity: 0;
+  }
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes spinLoader {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mg-scroll {
+  max-height: 210px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.mg-input::placeholder {
+  color: #a09a8a;
+}
+
+.mg-terminal-input::placeholder {
+  color: #5d6a70;
+}

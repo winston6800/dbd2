@@ -1,8 +1,36 @@
 import React, { useState } from 'react';
-import { Skull, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../lib/auth';
+import { BLOB_RADIUS, COLORS, DISPLAY_FONT, PAPER_BACKGROUND } from '../lib/monster/tokens';
+import { HeroFace } from './MonsterGoals/MonsterFace';
+
+/**
+ * The handoff explicitly does not cover authentication ("Not yet designed").
+ * This screen is assembled from the documented design tokens so it reads as the
+ * same product, but it is an extension — worth a designer's eye before launch.
+ */
 
 type Mode = 'login' | 'signup';
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  background: COLORS.surface,
+  border: `2px solid ${COLORS.ink}`,
+  borderRadius: 10,
+  padding: '12px 14px',
+  color: 'inherit',
+  fontSize: 15,
+};
+
+const pageStyle: React.CSSProperties = {
+  minHeight: '100vh',
+  ...PAPER_BACKGROUND,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '32px 20px 60px',
+  color: COLORS.ink,
+};
 
 export const AuthScreen: React.FC = () => {
   const { signIn, signUp } = useAuth();
@@ -20,11 +48,8 @@ export const AuthScreen: React.FC = () => {
 
     if (mode === 'signup') {
       const { error } = await signUp(email, password);
-      if (error) {
-        setError(error);
-      } else {
-        setSignupDone(true);
-      }
+      if (error) setError(error);
+      else setSignupDone(true);
     } else {
       const { error } = await signIn(email, password);
       if (error) setError(error);
@@ -34,13 +59,38 @@ export const AuthScreen: React.FC = () => {
 
   if (signupDone) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-6">
-        <div className="w-full max-w-sm text-center space-y-4">
-          <div className="text-5xl">📬</div>
-          <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Check your email</h2>
-          <p className="text-gray-500 text-sm">We sent a confirmation link to <span className="text-white font-bold">{email}</span>. Click it to activate your account.</p>
-          <button onClick={() => { setSignupDone(false); setMode('login'); }} className="text-brand text-sm font-bold hover:underline">
-            Back to login
+      <div style={pageStyle}>
+        <div
+          style={{
+            width: '100%',
+            maxWidth: 420,
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+            alignItems: 'center',
+          }}
+        >
+          <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>Check your email</div>
+          <div style={{ color: COLORS.mutedText, fontSize: 14 }}>
+            We sent a confirmation link to <strong>{email}</strong>. Click it to wake your monster.
+          </div>
+          <button
+            onClick={() => {
+              setSignupDone(false);
+              setMode('login');
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: COLORS.mutedText,
+              fontSize: 13,
+              textDecoration: 'underline',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            Back to sign in
           </button>
         </div>
       </div>
@@ -48,84 +98,120 @@ export const AuthScreen: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-6">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="text-center space-y-2">
-          <div className="flex items-center justify-center space-x-2">
-            <Skull size={28} className="text-brand" />
-            <span className="text-2xl font-black text-white italic uppercase tracking-tighter">DeadByDefault</span>
-          </div>
-          <p className="text-gray-500 text-xs font-black uppercase tracking-widest">Growth Protocol</p>
+    <div style={pageStyle}>
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          width: '100%',
+          maxWidth: 420,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 20,
+          alignItems: 'center',
+          textAlign: 'center',
+        }}
+      >
+        <div
+          style={{
+            width: 150,
+            height: 150,
+            borderRadius: BLOB_RADIUS,
+            background: COLORS.surface,
+            border: `3px solid ${COLORS.ink}`,
+            position: 'relative',
+            animation: 'floatIdleNoX 3.5s ease-in-out infinite',
+          }}
+        >
+          <HeroFace />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-3">
-            <div className="relative">
-              <Mail size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                className="w-full bg-white/5 border border-white/10 rounded-2xl pl-10 pr-4 py-4 text-white text-sm font-medium placeholder-gray-600 focus:outline-none focus:border-brand/50 focus:bg-white/8 transition-all"
-              />
-            </div>
-            <div className="relative">
-              <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                minLength={8}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl pl-10 pr-4 py-4 text-white text-sm font-medium placeholder-gray-600 focus:outline-none focus:border-brand/50 focus:bg-white/8 transition-all"
-              />
-            </div>
-          </div>
+        <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>Monster Goals</div>
+        <div style={{ color: COLORS.mutedText, fontSize: 14, marginTop: -12 }}>
+          {mode === 'login' ? 'Sign in to return to the fight.' : 'Create an account to summon your first monster.'}
+        </div>
 
-          {error && (
-            <div className="flex items-start space-x-2 bg-red-500/10 border border-red-500/20 rounded-xl p-3">
-              <AlertCircle size={14} className="text-red-400 mt-0.5 shrink-0" />
-              <p className="text-red-400 text-xs font-medium">{error}</p>
-            </div>
-          )}
+        <input
+          className="mg-input"
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
+          style={inputStyle}
+        />
+        <input
+          className="mg-input"
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          required
+          minLength={8}
+          style={{ ...inputStyle, marginTop: -12 }}
+        />
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 bg-brand rounded-2xl text-white font-black uppercase tracking-widest text-sm flex items-center justify-center space-x-2 hover:bg-brand/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        {error && (
+          <div
+            style={{
+              width: '100%',
+              background: '#f7e6e4',
+              border: '2px solid #a3564f',
+              borderRadius: 10,
+              padding: '10px 12px',
+              fontSize: 13,
+              color: '#7c3f3a',
+              textAlign: 'left',
+              marginTop: -12,
+            }}
           >
-            {loading ? (
-              <span className="animate-pulse">...</span>
-            ) : (
-              <>
-                <span>{mode === 'login' ? 'Sign In' : 'Create Account'}</span>
-                <ArrowRight size={16} />
-              </>
-            )}
-          </button>
-        </form>
+            {error}
+          </div>
+        )}
 
-        <div className="text-center">
-          {mode === 'login' ? (
-            <p className="text-gray-500 text-xs">
-              No account?{' '}
-              <button onClick={() => { setMode('signup'); setError(null); }} className="text-brand font-bold hover:underline">
-                Sign up
-              </button>
-            </p>
-          ) : (
-            <p className="text-gray-500 text-xs">
-              Already have an account?{' '}
-              <button onClick={() => { setMode('login'); setError(null); }} className="text-brand font-bold hover:underline">
-                Sign in
-              </button>
-            </p>
-          )}
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: '100%',
+            background: COLORS.successGreen,
+            border: `2px solid ${COLORS.ink}`,
+            borderRadius: 10,
+            padding: 14,
+            fontFamily: DISPLAY_FONT,
+            fontWeight: 700,
+            fontSize: 15,
+            color: COLORS.ink,
+            cursor: loading ? 'default' : 'pointer',
+            opacity: loading ? 0.6 : 1,
+          }}
+        >
+          {loading ? 'One moment…' : mode === 'login' ? 'Sign In' : 'Create Account'}
+        </button>
+
+        <div style={{ fontSize: 13, color: COLORS.mutedText, marginTop: -8 }}>
+          {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+          <button
+            type="button"
+            onClick={() => {
+              setMode(mode === 'login' ? 'signup' : 'login');
+              setError(null);
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              color: COLORS.ink,
+              fontWeight: 700,
+              fontSize: 13,
+              textDecoration: 'underline',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            {mode === 'login' ? 'Sign up' : 'Sign in'}
+          </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 };
