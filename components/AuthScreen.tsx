@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../lib/auth';
 import { BLOB_RADIUS, COLORS, DISPLAY_FONT, PAPER_BACKGROUND } from '../lib/monster/tokens';
 import { HeroFace } from './MonsterGoals/MonsterFace';
+import { track } from '../lib/monster/analytics';
 
 /**
  * The handoff explicitly does not cover authentication ("Not yet designed").
@@ -47,12 +48,18 @@ export const AuthScreen: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     setLoading(true);
 
     if (mode === 'signup') {
+      track('signup_started');
       const { error } = await signUp(email, password);
-      if (error) setError(error);
-      else setSignupDone(true);
+      if (error) {
+        setError(error);
+      } else {
+        track('signup_completed');
+        setSignupDone(true);
+      }
     } else {
       const { error } = await signIn(email, password);
       if (error) setError(error);
+      else track('signin_completed');
     }
     setLoading(false);
   };

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth';
+import { track, trackOnce } from '../lib/monster/analytics';
 import { BLOB_RADIUS, COLORS, DISPLAY_FONT, PAPER_BACKGROUND } from '../lib/monster/tokens';
 import { MonsterFace } from './MonsterGoals/MonsterFace';
 
@@ -45,9 +46,12 @@ export const SubscriptionGate: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => trackOnce('paywall_view'), []);
+
   const handleSubscribe = async () => {
     setLoading(true);
     setError(null);
+    track('checkout_started');
     try {
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',

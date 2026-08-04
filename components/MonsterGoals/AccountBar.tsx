@@ -13,8 +13,22 @@ const linkStyle: React.CSSProperties = {
   fontFamily: 'inherit',
 };
 
-/** Signed-in account controls: Stripe billing portal and sign out. */
-export const AccountBar: React.FC = () => {
+/**
+ * Whether to offer the analytics link. This only hides the UI — the summary
+ * itself is gated in Postgres against the `admin_emails` table, so an email
+ * listed here but not there will see the dashboard's "not authorized" state.
+ */
+function isAdmin(email: string | undefined): boolean {
+  if (!email) return false;
+  return (import.meta.env.VITE_ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e: string) => e.trim().toLowerCase())
+    .filter(Boolean)
+    .includes(email.toLowerCase());
+}
+
+/** Signed-in account controls: analytics, Stripe billing portal, sign out. */
+export const AccountBar: React.FC<{ onOpenAnalytics?: () => void }> = ({ onOpenAnalytics }) => {
   const { user, subscription, signOut } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +55,11 @@ export const AccountBar: React.FC = () => {
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 11, color: COLORS.metaText }}>
       {error && <span style={{ color: '#a3564f' }}>{error}</span>}
       <span>{user?.email}</span>
+      {onOpenAnalytics && isAdmin(user?.email) && (
+        <button type="button" onClick={onOpenAnalytics} style={linkStyle}>
+          Analytics
+        </button>
+      )}
       {subscription && (
         <button type="button" onClick={openBillingPortal} disabled={busy} style={linkStyle}>
           {busy ? 'Opening…' : 'Manage billing'}

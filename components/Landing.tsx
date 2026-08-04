@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BLOB_RADIUS, COLORS, DISPLAY_FONT, PAPER_BACKGROUND } from '../lib/monster/tokens';
+import { track, trackOnce } from '../lib/monster/analytics';
 import { HeroFace, MonsterFace } from './MonsterGoals/MonsterFace';
 import { MilkUnit } from './MonsterGoals/MilkUnit';
 
@@ -49,7 +50,15 @@ const card: React.CSSProperties = {
   padding: '16px 18px',
 };
 
-export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = ({ onStart, onSignIn }) => (
+export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = ({ onStart, onSignIn }) => {
+  useEffect(() => trackOnce('landing_view'), []);
+
+  const start = () => {
+    track('landing_cta_click');
+    onStart();
+  };
+
+  return (
   <div
     style={{
       minHeight: '100vh',
@@ -103,7 +112,7 @@ export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = 
           Monster Goals is a goal tracker shaped like a boss fight. Break the thing down, check tasks off,
           and watch your little army chip it to zero.
         </p>
-        <button onClick={onStart} style={primaryButton}>
+        <button onClick={start} style={primaryButton}>
           Start your fight
         </button>
         <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.8px', color: COLORS.metaText }}>
@@ -185,7 +194,7 @@ export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = 
           Unlimited mini-bosses and tasks, synced across your devices. No free tier — you sign in, you
           subscribe, you fight.
         </div>
-        <button onClick={onStart} style={primaryButton}>
+        <button onClick={start} style={primaryButton}>
           Start your fight
         </button>
       </div>
@@ -196,3 +205,4 @@ export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = 
     </div>
   </div>
 );
+};

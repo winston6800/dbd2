@@ -193,6 +193,13 @@ body {
   width: 100%;
 }
 
+/* Four KPI tiles do not fit a phone; two rows of two do. */
+@media (max-width: 720px) {
+  .mg-kpi-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
 @media (max-width: 720px) {
   .mg-landing-beats {
     grid-template-columns: 1fr;

@@ -8,6 +8,7 @@ import { Landing } from './components/Landing';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { MonsterGoalsApp } from './components/MonsterGoals/MonsterGoalsApp';
 import { COLORS, PAPER_BACKGROUND } from './lib/monster/tokens';
+import { trackOnce } from './lib/monster/analytics';
 
 const Splash: React.FC<{ label: string }> = ({ label }) => (
   <div
@@ -44,6 +45,11 @@ const AppGate: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [refreshSubscription]);
+
+  // Marks the end of the funnel: signed in, paid, and through the gate.
+  useEffect(() => {
+    if (subscription) trackOnce('subscription_active');
+  }, [subscription]);
 
   if (loading) return <Splash label="Waking the monsters…" />;
 

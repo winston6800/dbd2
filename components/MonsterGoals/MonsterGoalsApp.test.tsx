@@ -20,7 +20,9 @@ vi.mock('../../lib/supabase', () => ({
         eq: () => ({ maybeSingle: async () => ({ data: null, error: { message: 'offline' } }) }),
       }),
       upsert: async () => ({ error: { message: 'offline' } }),
+      insert: async () => ({ error: null }),
     }),
+    rpc: async () => ({ data: null, error: { message: 'offline' } }),
   },
 }));
 

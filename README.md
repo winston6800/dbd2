@@ -96,16 +96,47 @@ See [app.md](./app.md) for behaviour, and `lib/monster/tokens.ts` for the exact 
 
 Before pointing traffic at this:
 
-1. Run **both** Supabase migrations — `002_goals.sql` is what makes a paid account work on a second
-   device. Without it every cloud read fails and the board silently falls back to device-local storage.
+1. ~~Run the Supabase migrations~~ — `001`, `002` and `003` are applied to the `dbd2` project
+   (`sswzdbteldmmalebfned`). Re-run them from `supabase/migrations/` on any new project.
 2. Set `VITE_APP_URL` on the deployment. It is baked into the OG tags at build time; if it is unset,
    link previews on Reddit, Twitter and Slack will not resolve `og.png`.
-3. Confirm the Stripe webhook is live and pointed at `/api/stripe-webhook`. If it is not, payments
-   succeed but nobody is ever let in — subscriptions are written by the webhook alone.
+3. **Point the Stripe webhook at `https://<your-domain>/api/stripe-webhook`** and subscribe it to
+   `checkout.session.completed`, `customer.subscription.updated` and `customer.subscription.deleted`.
+   Put the signing secret in `STRIPE_WEBHOOK_SECRET`. If this is not live, payments succeed but nobody
+   is ever let in — the `subscriptions` row is written by the webhook alone.
 4. Take a real payment with a live card and confirm you land on the board. The Checkout → webhook →
    `subscriptions` row → gate path cannot be tested locally without live keys.
-5. Sign up on a phone. The board is scaled, not reflowed, so text is small on a 390px screen — decide
+5. Keep the Supabase project awake. It had paused, and a paused project means nobody can sign in at
+   all. Free-tier projects pause after a week of inactivity.
+6. Sign up on a phone. The board is scaled, not reflowed, so text is small on a 390px screen — decide
    whether that is acceptable before sending mobile traffic to it.
+7. Tag the links you post: `?utm_source=reddit`. Without it Reddit traffic is only attributable by
+   referring domain, which Reddit's apps often strip.
+
+## Analytics
+
+An admin-only dashboard lives behind the **Analytics** link in the account row, visible to emails in
+`VITE_ADMIN_EMAILS`. It shows the landing → CTA → signup → checkout → subscribed funnel, visitors per
+day, and traffic sources.
+
+| Piece | File |
+|---|---|
+| Event capture (`track`, `trackOnce`) | `lib/monster/analytics.ts` |
+| Dashboard | `components/Analytics/AnalyticsDashboard.tsx` |
+| Table, RLS and the summary function | `supabase/migrations/003_analytics.sql` |
+
+Two things worth knowing:
+
+- **Authorisation is enforced in Postgres, not the UI.** `analytics_summary()` raises unless the
+  caller's email is in the `admin_emails` table. Hiding the link via `VITE_ADMIN_EMAILS` is
+  convenience only — an email in the env var but not in the table sees a "not authorized" state, so
+  set both.
+- **Anonymous inserts are open by necessity.** Landing views happen before sign-in, so the events
+  table accepts unauthenticated writes and could be spammed. Fine for a launch; add a rate limit or
+  move the write behind an edge function if the numbers stop looking believable.
+
+Attribution is pinned at first contact and kept in `sessionStorage` — by the time someone subscribes,
+`document.referrer` is long gone.
 
 ## Known gaps
 

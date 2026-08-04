@@ -8,6 +8,8 @@ import { loadState, saveState } from '../../lib/monster/storage';
 import { createBoardSaver, loadBoard } from '../../lib/monster/sync';
 import { uid } from '../../lib/monster/ids';
 import { BoardScaler } from './BoardScaler';
+import { track } from '../../lib/monster/analytics';
+import { AnalyticsDashboard } from '../Analytics/AnalyticsDashboard';
 import { useAuth } from '../../lib/auth';
 import { BattleBoard, type AttackFx } from './BattleBoard';
 import { CreateGoalScreen } from './CreateGoalScreen';
@@ -30,6 +32,7 @@ export const MonsterGoalsApp: React.FC = () => {
   const [defeatingId, setDefeatingId] = useState<string | null>(null);
   const [hoverBossId, setHoverBossId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const schedule = useCallback((fn: () => void, ms: number) => {
@@ -100,6 +103,7 @@ export const MonsterGoalsApp: React.FC = () => {
     setGoal(next);
     setActiveIndex(0);
     persist(next, 0);
+    track('goal_created');
 
     // The AI name, if one ever resolves, replaces the local one in place. A
     // slow or failed call must never block the board.
@@ -139,6 +143,7 @@ export const MonsterGoalsApp: React.FC = () => {
     setActiveIndex(nextIndex);
     setAddingBoss(false);
     persist(nextGoal, nextIndex);
+    track('boss_added', { bossCount: list.length });
 
     void aiMonsterName(goalText).then(aiName => {
       if (!aiName) return;
@@ -165,6 +170,7 @@ export const MonsterGoalsApp: React.FC = () => {
     };
     setGoal(nextGoal);
     persist(nextGoal, safeIndex);
+    track('task_added');
   };
 
   const selectBoss = (index: number) => {
@@ -196,10 +202,13 @@ export const MonsterGoalsApp: React.FC = () => {
     setGoal(nextGoal);
     persist(nextGoal, safeIndex);
 
+    track('task_completed');
     setAttackFx({ x: GOAL_MONSTER_X, y: toViewBoxY(ACTIVE_BOSS_Y) });
     schedule(() => setAttackFx(null), HIT_PARTICLE_MS);
 
     if (newHp <= 0) {
+      track('boss_defeated');
+      if (nextGoal.miniBosses.every(b => b.defeated)) track('goal_completed');
       const defeatedBossId = activeBoss.id;
       setDefeatingId(defeatedBossId);
       const nextIdx = nextGoal.miniBosses.findIndex(b => !b.defeated);
@@ -230,13 +239,15 @@ export const MonsterGoalsApp: React.FC = () => {
     color: COLORS.ink,
   };
 
+  if (showAnalytics) return <AnalyticsDashboard onBack={() => setShowAnalytics(false)} />;
+
   if (!hydrated) return <div style={page} />;
 
   if (!goal) {
     return (
       <div style={page}>
         <div style={{ width: '100%', maxWidth: 800, display: 'flex', justifyContent: 'flex-end' }}>
-          <AccountBar />
+          <AccountBar onOpenAnalytics={() => setShowAnalytics(true)} />
         </div>
         <CreateGoalScreen onCreate={createGoal} />
       </div>
@@ -247,7 +258,7 @@ export const MonsterGoalsApp: React.FC = () => {
     <div style={page}>
       <div style={{ width: '100%', maxWidth: 800, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <AccountBar />
+          <AccountBar onOpenAnalytics={() => setShowAnalytics(true)} />
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
