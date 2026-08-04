@@ -93,6 +93,15 @@ export const MonsterGoalsApp: React.FC = () => {
   const miniBosses = goal?.miniBosses ?? [];
   const total = miniBosses.length;
   const safeIndex = Math.min(activeIndex, Math.max(0, total - 1));
+
+  // Mirrors of the live state, for deferred work that must not act on a stale
+  // closure (see the defeat-animation timeout in completeTask).
+  const goalRef = useRef<Goal | null>(goal);
+  const activeIndexRef = useRef(safeIndex);
+  useEffect(() => {
+    goalRef.current = goal;
+    activeIndexRef.current = safeIndex;
+  }, [goal, safeIndex]);
   const activeBoss: MiniBoss | undefined = miniBosses[safeIndex];
   const defeatedCount = miniBosses.filter(b => b.defeated).length;
   const allDefeated = total > 0 && defeatedCount === total;
@@ -209,14 +218,22 @@ export const MonsterGoalsApp: React.FC = () => {
     if (newHp <= 0) {
       track('boss_defeated');
       if (nextGoal.miniBosses.every(b => b.defeated)) track('goal_completed');
-      const defeatedBossId = activeBoss.id;
-      setDefeatingId(defeatedBossId);
-      const nextIdx = nextGoal.miniBosses.findIndex(b => !b.defeated);
+      setDefeatingId(activeBoss.id);
+
+      // The board stays interactive for the 1300ms the defeat animation runs,
+      // so anything captured here is stale by the time it fires: persisting the
+      // closed-over goal would overwrite edits made during the animation (and
+      // now push that stale board to Supabase), and an index computed from the
+      // old array points at the wrong boss if one was inserted meanwhile. Read
+      // the latest state instead.
       schedule(() => {
         setDefeatingId(null);
-        const resolved = nextIdx >= 0 ? nextIdx : safeIndex;
+        const latest = goalRef.current;
+        if (!latest) return;
+        const firstAlive = latest.miniBosses.findIndex(b => !b.defeated);
+        const resolved = firstAlive >= 0 ? firstAlive : activeIndexRef.current;
         setActiveIndex(resolved);
-        persist(nextGoal, resolved);
+        persist(latest, resolved);
       }, DEFEAT_ANIM_MS);
     }
   };

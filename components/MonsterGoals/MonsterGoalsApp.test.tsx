@@ -152,6 +152,35 @@ describe('MonsterGoalsApp', () => {
     expect(screen.getAllByText('✓')).toHaveLength(10);
   });
 
+  it('keeps edits made during the 1300ms defeat animation', async () => {
+    await mountApp();
+    vi.useFakeTimers();
+    summonGoal('Survive the animation');
+    addSubBoss('Doomed boss');
+
+    for (let i = 0; i < 9; i++) addTask(`Task ${i}`);
+    for (let i = 0; i < 9; i++) {
+      fireEvent.click(screen.getByRole('checkbox', { name: `Task ${i}` }));
+    }
+
+    // The board stays interactive while the boss is dying.
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+    addSubBoss('Added mid-animation');
+
+    act(() => {
+      vi.advanceTimersByTime(1300);
+    });
+
+    // The deferred write must not clobber the boss added during the animation.
+    const saved = JSON.parse(localStorage.getItem('monsterGoalsAppState:test-user') ?? '{}');
+    const names = saved.goal.miniBosses.map((b: { goalText: string }) => b.goalText);
+    expect(names).toContain('Added mid-animation');
+    // …and the board must advance to the surviving boss, not a stale index.
+    expect(saved.goal.miniBosses[saved.activeIndex].goalText).toBe('Added mid-animation');
+  });
+
   it('restores a saved board from storage on mount', async () => {
     const { unmount } = await mountApp();
     summonGoal('Ship the thing');
