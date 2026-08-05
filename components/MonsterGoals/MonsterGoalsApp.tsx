@@ -246,23 +246,20 @@ export const MonsterGoalsApp: React.FC = () => {
     [defeatedCount, total],
   );
 
+  // The shell fills the viewport and does not scroll; .mg-shell and the grid
+  // beneath it hand the leftover height to the board and the queue rail.
   const page: React.CSSProperties = {
-    minHeight: '100vh',
     ...PAPER_BACKGROUND,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '32px 20px 60px',
     color: COLORS.ink,
   };
 
   if (showAnalytics) return <AnalyticsDashboard onBack={() => setShowAnalytics(false)} />;
 
-  if (!hydrated) return <div style={page} />;
+  if (!hydrated) return <div className="mg-shell" style={page} />;
 
   if (!goal) {
     return (
-      <div style={page}>
+      <div className="mg-shell" style={{ ...page, justifyContent: 'center' }}>
         <div style={{ width: '100%', maxWidth: 800, display: 'flex', justifyContent: 'flex-end' }}>
           <AccountBar onOpenAnalytics={() => setShowAnalytics(true)} />
         </div>
@@ -272,72 +269,86 @@ export const MonsterGoalsApp: React.FC = () => {
   }
 
   return (
-    <div style={page}>
-      <div style={{ width: '100%', maxWidth: 800, display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <AccountBar onOpenAnalytics={() => setShowAnalytics(true)} />
-        </div>
-
+    <div className="mg-shell" style={page}>
+      <div className="mg-shell-inner">
+        {/* Header: goal, progress, account controls — one compact row. */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-          <div>
-            <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>{goal.name}</div>
-            <div style={{ fontSize: 13, color: COLORS.mutedText, marginTop: 1 }}>{progressLabel}</div>
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontFamily: DISPLAY_FONT,
+                fontWeight: 700,
+                fontSize: 22,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {goal.name}
+            </div>
+            <div style={{ fontSize: 12, color: COLORS.mutedText }}>{progressLabel}</div>
           </div>
-          <button
-            onClick={() => setAddingBoss(true)}
-            style={{
-              background: COLORS.surface,
-              border: `2px solid ${COLORS.ink}`,
-              color: COLORS.ink,
-              borderRadius: 10,
-              padding: '8px 14px',
-              fontSize: 13,
-              cursor: 'pointer',
-              fontWeight: 700,
-              flexShrink: 0,
-            }}
-          >
-            + New Sub-Boss
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+            <AccountBar onOpenAnalytics={() => setShowAnalytics(true)} />
+            <button
+              onClick={() => setAddingBoss(true)}
+              style={{
+                background: COLORS.surface,
+                border: `2px solid ${COLORS.ink}`,
+                color: COLORS.ink,
+                borderRadius: 10,
+                padding: '8px 14px',
+                fontSize: 13,
+                cursor: 'pointer',
+                fontWeight: 700,
+                flexShrink: 0,
+              }}
+            >
+              + New Sub-Boss
+            </button>
+          </div>
         </div>
-
-        <BoardScaler>
-          <BattleBoard
-            monsterName={goal.monsterName}
-            miniBosses={miniBosses}
-            activeIndex={safeIndex}
-            defeatingId={defeatingId}
-            allDefeated={allDefeated}
-            attackFx={attackFx}
-            hoverBossId={hoverBossId}
-            onHoverBoss={setHoverBossId}
-            onSelectBoss={selectBoss}
-            onAddBoss={() => setAddingBoss(true)}
-          />
-        </BoardScaler>
 
         {addingBoss && <AddBossForm onAdd={addBoss} />}
 
-        {activeBoss && total > 0 && <AddTaskBar onAdd={addTask} />}
+        {/* Board on the left, queue rail on the right. Both shrink to fit. */}
+        <div className="mg-main">
+          <BoardScaler>
+            <BattleBoard
+              monsterName={goal.monsterName}
+              miniBosses={miniBosses}
+              activeIndex={safeIndex}
+              defeatingId={defeatingId}
+              allDefeated={allDefeated}
+              attackFx={attackFx}
+              hoverBossId={hoverBossId}
+              onHoverBoss={setHoverBossId}
+              onSelectBoss={selectBoss}
+              onAddBoss={() => setAddingBoss(true)}
+            />
+          </BoardScaler>
 
-        {activeBoss && <TaskQueue tasks={activeBoss.tasks} onComplete={completeTask} />}
-
-        {allDefeated && (
-          <div
-            style={{
-              textAlign: 'center',
-              background: COLORS.successGreen,
-              border: `2px solid ${COLORS.ink}`,
-              borderRadius: 18,
-              padding: 22,
-              fontFamily: DISPLAY_FONT,
-              fontWeight: 700,
-              fontSize: 19,
-            }}
-          >
-            {goal.monsterName} has been fully defeated! Goal complete.
+          <div className="mg-rail">
+            {activeBoss && total > 0 && <AddTaskBar onAdd={addTask} />}
+            {activeBoss && <TaskQueue tasks={activeBoss.tasks} onComplete={completeTask} />}
+            {allDefeated && (
+              <div
+                style={{
+                  textAlign: 'center',
+                  background: COLORS.successGreen,
+                  border: `2px solid ${COLORS.ink}`,
+                  borderRadius: 18,
+                  padding: 16,
+                  fontFamily: DISPLAY_FONT,
+                  fontWeight: 700,
+                  fontSize: 16,
+                }}
+              >
+                {goal.monsterName} has been fully defeated! Goal complete.
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
