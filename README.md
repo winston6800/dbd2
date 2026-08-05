@@ -6,8 +6,9 @@ mini-bosses (sub-goals), and add tasks under the active mini-boss. Checking off 
 takes 12 HP off the boss. At 0 HP the boss plays a defeat animation, drops into a faded graveyard
 trail, and the next sub-goal becomes active.
 
-Access is gated: users must sign in **and** have bought access before they see the board. Access is a
-single $20 payment — there is no subscription and it does not expire.
+Access is gated: users must sign in **and** hold a subscription before they see the board. New users
+get a **3-day free trial**; a card is taken up front and charged $20/month when the trial ends unless
+they cancel first.
 
 ## Quick start
 
@@ -36,45 +37,65 @@ during development.
 ## Auth & paywall
 
 The gate lives in `index.tsx` and is deliberately hard — logged-out visitors get a landing page that
-explains the product and states the price, then sign in, then pay once, then the board:
+explains the product and states the price, then sign in, then start a trial, then the board:
 
 ```
-Landing → AuthScreen → PurchaseGate → MonsterGoalsApp
+Landing → AuthScreen → SubscriptionGate → MonsterGoalsApp
 ```
 
 | Piece | File |
 |---|---|
 | Marketing page for logged-out visitors | `components/Landing.tsx` |
 | Supabase session + entitlement state | `lib/auth.tsx` |
-| Supabase client, purchase lookup | `lib/supabase.ts` |
+| Supabase client, entitlement + trial helpers | `lib/supabase.ts` |
 | Email/password sign in & sign up | `components/AuthScreen.tsx` |
-| $20 one-time paywall | `components/PurchaseGate.tsx` |
-| Account row & sign out | `components/MonsterGoals/AccountBar.tsx` |
-| Stripe Checkout session (`mode: payment`) | `api/create-checkout-session.ts` |
-| Stripe webhook → `purchases` table | `api/stripe-webhook.ts` |
-| `purchases` table + RLS | `supabase/migrations/004_purchases.sql` |
+| Trial + $20/mo paywall | `components/SubscriptionGate.tsx` |
+| Trial countdown, cancel link, sign out | `components/MonsterGoals/AccountBar.tsx` |
+| Test/live credential resolution | `api/_stripe.ts` |
+| Stripe Checkout (`mode: subscription`, trial) | `api/create-checkout-session.ts` |
+| Stripe billing portal — where users cancel | `api/create-portal-session.ts` |
+| Stripe webhook → `subscriptions` table | `api/stripe-webhook.ts` |
+| `subscriptions` table + RLS | `supabase/migrations/005_subscriptions_trial.sql` |
+| Lifecycle tests | `api/stripe-webhook.test.ts`, `lib/entitlement.test.ts` |
 
-A user is let through when `purchases` holds a row for them with status `paid`. That row is written
-only by the Stripe webhook using the service-role key; RLS lets users read their own row and nothing
-else. There is no expiry to check and nothing to renew.
+### How entitlement works
 
-`checkout.session.completed` and `payment_intent.succeeded` both describe the same payment and either
-can be redelivered, so the webhook's write is idempotent — it upserts on `user_id`.
+A user is let through when `subscriptions` holds a row for them with status **`trialing`** or
+**`active`**. Everything else — `past_due`, `canceled`, `unpaid`, `incomplete` — does not grant
+access. The row is written only by the Stripe webhook using the service-role key; RLS lets users read
+their own row and nothing else.
 
-**`public.subscriptions` is dead.** It is empty and no longer read or written. Drop it once you are
-happy nothing else needs it: `drop table public.subscriptions;`
+The lifecycle, and what each step does to access:
+
+| What happens | Stripe sends | Row becomes | Access |
+|---|---|---|---|
+| Checkout completes | `checkout.session.completed` | `trialing`, `trial_end` set | ✅ |
+| Trial ends, card charged | `customer.subscription.updated`, `invoice.paid` | `active` | ✅ |
+| User cancels in the portal | `customer.subscription.updated` | `active` + `cancel_at_period_end` | ✅ until period end |
+| Period actually ends | `customer.subscription.deleted` | `canceled` | ❌ |
+| Renewal charge fails | `invoice.payment_failed` | `past_due` | ❌ |
+| Trial ends with no card | `customer.subscription.deleted` | `canceled` | ❌ |
+
+Cancelling is **not** immediate by design: the user keeps what they paid for until the period ends.
+
+Every write upserts on `user_id`, so a redelivered event is harmless — Stripe retries, and it must be
+safe when it does.
+
+**`public.purchases` is dead** (the one-time model). It is empty and unused; drop it when ready:
+`drop table public.purchases;`
 
 ### Setup
 
 1. **Supabase** — create a project, run the migrations in `supabase/migrations/` in order, and enable
-   the email/password provider. `001_subscriptions.sql` is historical: it is superseded by
-   `004_purchases.sql` and can be skipped on a fresh project.
-2. **Stripe** — create a **one-time** $20 price and copy its price ID into `STRIPE_PRICE_ID`. A
-   recurring price will not work: Checkout rejects it in `payment` mode.
-3. **Webhook** — point a Stripe webhook at `/api/stripe-webhook` subscribing to
-   `checkout.session.completed`, `payment_intent.succeeded`, and `payment_intent.payment_failed`.
-   Copy the signing secret into `STRIPE_WEBHOOK_SECRET`. Add `charge.refunded` too if you want
-   refunds to revoke access automatically — the handler is already written.
+   the email/password provider. `001` and `004` are historical (the original subscription shape and
+   the one-time-payment experiment); `005` supersedes both and is the one that matters.
+2. **Stripe** — create a **recurring monthly** $20 price. A one-off price will not work: Checkout
+   rejects it in `subscription` mode. Put its id in `STRIPE_PRICE_ID_TEST` / `_LIVE`.
+3. **Webhook** — point a Stripe webhook at `/api/stripe-webhook` subscribing to:
+   `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`,
+   `customer.subscription.deleted`, `customer.subscription.trial_will_end`, `invoice.paid`,
+   `invoice.payment_failed`. Copy the signing secret into `STRIPE_WEBHOOK_SECRET_TEST` / `_LIVE`.
+   **Create two endpoints** — one in test mode, one in live — each with its own secret.
 4. **Env** — set every variable in `.env.example`. `VITE_`-prefixed values ship in the browser bundle;
    the rest are server-only and must be set on the deployment (Vercel functions), never in the client.
 
@@ -101,35 +122,75 @@ Fonts stylesheet for Kalam and Nunito.
 
 See [app.md](./app.md) for behaviour, and `lib/monster/tokens.ts` for the exact colours and radii.
 
+## Testing the subscription end to end
+
+The automated suite (`api/stripe-webhook.test.ts`) drives the handler through the whole lifecycle
+using Stripe's event shapes, so the **logic** is covered: trial start, conversion, cancel-then-lapse,
+payment failure, redelivery. What it cannot cover is Stripe's own behaviour — that a trial really
+converts after 3 days, that the price is configured right, that signatures verify. Those need a real
+test-mode run:
+
+```bash
+# 1. Forward test-mode events to a local dev server. This prints a
+#    whsec_... — use it as STRIPE_WEBHOOK_SECRET_TEST.
+stripe listen --forward-to localhost:3000/api/stripe-webhook
+
+# 2. Start a trial through the UI, paying with the test card 4242 4242 4242 4242.
+#    The row should appear as `trialing`.
+
+# 3. Fast-forward the trial instead of waiting 3 days. In the Stripe dashboard:
+#    Billing → Subscriptions → the subscription → "Advance test clock",
+#    or attach it to a test clock at creation and advance that.
+#    Expect: status flips to `active`, invoice.paid arrives, card is charged.
+
+# 4. Cancel from the app's "Manage subscription" link.
+#    Expect: cancel_at_period_end = true, status still `active`, access retained.
+
+# 5. Advance the clock past current_period_end.
+#    Expect: customer.subscription.deleted, status `canceled`, gate returns.
+```
+
+Individual events can also be replayed without the UI:
+
+```bash
+stripe trigger customer.subscription.updated
+stripe trigger customer.subscription.deleted
+stripe trigger invoice.payment_failed
+```
+
+Check the result after each step with:
+
+```sql
+select status, trial_end, current_period_end, cancel_at_period_end
+from public.subscriptions;
+```
+
 ## Launch checklist
 
 Before pointing traffic at this:
 
-1. ~~Run the Supabase migrations~~ — `001`–`004` are applied to the `dbd2` project
-   (`sswzdbteldmmalebfned`), including the `purchases` table. Re-run them from
-   `supabase/migrations/` on any new project.
-2. Set `VITE_APP_URL` on the deployment. It is baked into the OG tags at build time; if it is unset,
-   link previews on Reddit, Twitter and Slack will not resolve `og.png`.
-3. **Point the Stripe webhook at `https://<your-domain>/api/stripe-webhook`** and subscribe it to
-   `checkout.session.completed`, `payment_intent.succeeded` and `payment_intent.payment_failed`.
-   Put the signing secret in `STRIPE_WEBHOOK_SECRET`. If this is not live, payments succeed but nobody
-   is ever let in — the `purchases` row is written by the webhook alone.
-4. Take a real payment and confirm you land on the board. The Checkout → webhook → `purchases` row →
-   gate path cannot be tested locally without keys. Note that a **test-mode** webhook pointed at your
-   production domain only works if the deployed app is also running test keys — use a preview deploy
-   or `stripe listen --forward-to` instead of putting production into test mode.
-5. Keep the Supabase project awake. It had paused, and a paused project means nobody can sign in at
-   all. Free-tier projects pause after a week of inactivity.
-6. Sign up on a phone. The board is scaled, not reflowed, so text is small on a 390px screen — decide
-   whether that is acceptable before sending mobile traffic to it.
-7. Tag the links you post: `?utm_source=reddit`. Without it Reddit traffic is only attributable by
-   referring domain, which Reddit's apps often strip.
+1. ~~Run the Supabase migrations~~ — applied to the `dbd2` project (`sswzdbteldmmalebfned`);
+   `subscriptions` has the trial-aware shape. Re-run from `supabase/migrations/` on a new project.
+2. **Create a recurring monthly $20 price** in both test and live mode, and set
+   `STRIPE_PRICE_ID_TEST` / `STRIPE_PRICE_ID_LIVE`. A one-off price breaks checkout outright.
+3. **Create two webhook endpoints** — one test, one live — both at
+   `https://<your-domain>/api/stripe-webhook`, with the events listed under Setup. Put each signing
+   secret in the matching `STRIPE_WEBHOOK_SECRET_*`. If the webhook is not live, checkout succeeds but
+   nobody is ever let in: the `subscriptions` row is written by the webhook alone.
+4. **Set `STRIPE_MODE`** — `test` on preview deployments, `live` on production. A live key under
+   `STRIPE_MODE=test` (or the reverse) fails fast at startup rather than silently taking real money.
+5. Run the trial test above in test mode **before** switching production to `live`.
+6. Set `VITE_APP_URL` on the deployment, or link previews will not resolve `og.png`.
+7. Keep the Supabase project awake. It had paused once, and a paused project means nobody can sign in
+   at all. Free-tier projects pause after about a week of inactivity.
+8. Sign up on a phone. The board is scaled, not reflowed, so text is small on a 390px screen.
+9. Tag the links you post: `?utm_source=reddit`. Reddit's apps often strip the referrer.
 
 ## Analytics
 
 An admin-only dashboard lives behind the **Analytics** link in the account row, visible to emails in
-`VITE_ADMIN_EMAILS`. It shows the landing → CTA → signup → checkout → paid funnel, visitors per day,
-traffic sources, customers and gross revenue.
+`VITE_ADMIN_EMAILS`. It shows the landing → CTA → signup → checkout → trial funnel, visitors per day,
+traffic sources, and how many accounts are trialing, paying, or cancelling.
 
 | Piece | File |
 |---|---|
@@ -153,9 +214,12 @@ Attribution is pinned at first contact and kept in `sessionStorage` — by the t
 
 ## Known gaps
 
-- **No trial and no free tier.** Cold traffic has to pay $20 before seeing the board. The landing page
-  explains the product and the price up front, and a one-time price is an easier ask than a
-  subscription, but a hard gate still converts worse than a trial. Worth revisiting if signups stall.
+- **The trial still requires a card.** That converts far better than charging immediately, but worse
+  than a no-card trial. It is the reason the trial can auto-convert at all; revisit only if signups
+  stall for that specific reason.
+- **3 days is short.** `customer.subscription.trial_will_end` fires ~3 days before the trial ends, so
+  on a 3-day trial it lands almost immediately. The handler only logs it — if you want a "your trial
+  ends tomorrow" email, that hook is where it goes, but the timing needs a longer trial to be useful.
 - **Mobile is scaled, not redesigned.** The board is a fixed 800×640 composition per the handoff, so
   `BoardScaler` shrinks it as a unit — on a 390px phone that is roughly half size, and boss labels get
   small. A proper mobile composition would need design input.
@@ -165,8 +229,6 @@ Attribution is pinned at first contact and kept in `sessionStorage` — by the t
 - **One goal per account.** The data model holds a single goal, so the paywall and landing copy
   deliberately promise "unlimited mini-bosses and tasks" rather than unlimited goals. Keep it that way
   until multiple goals actually ship.
-- **Lifetime access has an open-ended cost.** Boards sync to Supabase forever on a single $20 payment.
-  Fine at launch scale; revisit before it is not.
 - **No analytics.** Nothing measures how many landing-page visitors start checkout, which is the
   number you will want on day one of a Reddit push.
 - **Auth, billing and landing screens are an extension.** The design handoff explicitly did not cover

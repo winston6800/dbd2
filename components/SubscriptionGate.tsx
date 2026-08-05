@@ -5,8 +5,9 @@ import { BLOB_RADIUS, COLORS, DISPLAY_FONT, PAPER_BACKGROUND } from '../lib/mons
 import { MonsterFace } from './MonsterGoals/MonsterFace';
 
 /**
- * The one-time paywall. Access is granted by a single $20 payment and never
- * expires, so there is nothing here about renewals or cancelling.
+ * The paywall. A card is collected up front and the trial converts on its own,
+ * so the trial length and the price after it must both be stated plainly here —
+ * a surprise charge is the fastest way to earn a chargeback.
  *
  * The handoff explicitly does not cover billing/payments UI ("Not yet
  * designed"). This gate is assembled from the documented design tokens so it
@@ -19,10 +20,11 @@ const FEATURES = [
   'Unlimited mini-bosses and tasks',
   'Deploy Milk units and watch them fight',
   'Your boss chain saved and synced across devices',
-  'Pay once — no renewal, no expiry',
   'Defeat animations and the graveyard trail',
-  'A named monster for every sub-goal',
+  'Cancel in two clicks, any time',
 ];
+
+const TRIAL_DAYS = 3;
 
 const pageStyle: React.CSSProperties = {
   minHeight: '100vh',
@@ -45,8 +47,8 @@ const linkStyle: React.CSSProperties = {
   fontFamily: 'inherit',
 };
 
-export const PurchaseGate: React.FC = () => {
-  const { user, signOut, refreshPurchase, purchaseLoading } = useAuth();
+export const SubscriptionGate: React.FC = () => {
+  const { user, signOut, refreshSubscription, subscriptionLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,7 +73,7 @@ export const PurchaseGate: React.FC = () => {
     }
   };
 
-  if (purchaseLoading) {
+  if (subscriptionLoading) {
     return (
       <div style={pageStyle}>
         <div style={{ color: COLORS.mutedText, fontSize: 14 }}>Checking your access…</div>
@@ -106,9 +108,12 @@ export const PurchaseGate: React.FC = () => {
           <MonsterFace variant={2} />
         </div>
 
-        <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>Arm yourself</div>
+        <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>
+          Start your {TRIAL_DAYS}-day free trial
+        </div>
         <div style={{ color: COLORS.mutedText, fontSize: 14, marginTop: -12 }}>
-          One payment. No subscription, no renewal.
+          Free for {TRIAL_DAYS} days, then $20 a month. Cancel any time before it ends and you are not
+          charged.
         </div>
 
         <div
@@ -124,7 +129,7 @@ export const PurchaseGate: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
             <span style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>$20</span>
             <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.8px', color: COLORS.metaText }}>
-              ONCE
+              PER MONTH, AFTER THE TRIAL
             </span>
           </div>
 
@@ -199,15 +204,15 @@ export const PurchaseGate: React.FC = () => {
             opacity: loading ? 0.6 : 1,
           }}
         >
-          {loading ? 'Redirecting…' : 'Buy access — $20'}
+          {loading ? 'Redirecting…' : `Start ${TRIAL_DAYS}-day free trial`}
         </button>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', marginTop: -8 }}>
           <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.8px', color: COLORS.metaText }}>
-            ONE-TIME PAYMENT · POWERED BY STRIPE
+            CARD REQUIRED · CANCEL ANY TIME · POWERED BY STRIPE
           </span>
-          <button onClick={() => void refreshPurchase()} style={{ ...linkStyle, color: COLORS.ink, fontWeight: 700 }}>
-            I already paid — refresh
+          <button onClick={() => void refreshSubscription()} style={{ ...linkStyle, color: COLORS.ink, fontWeight: 700 }}>
+            I already subscribed — refresh
           </button>
           <button onClick={() => void signOut()} style={{ ...linkStyle, color: COLORS.mutedText, fontSize: 12 }}>
             Sign out ({user?.email})

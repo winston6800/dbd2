@@ -16,7 +16,8 @@ export type AnalyticsEvent =
   | 'signup_completed'
   | 'paywall_view'
   | 'checkout_started'
-  | 'purchase_completed'
+  | 'trial_started'
+  | 'subscription_active'
   | 'goal_created'
   | 'boss_added'
   | 'task_added'
@@ -137,9 +138,12 @@ export interface AnalyticsSummary {
     visitors: number;
     signups: number;
     checkouts: number;
-    customers: number;
-    /** Gross revenue in the smallest currency unit (cents). */
-    revenue: number;
+    /** Currently in a free trial. */
+    trialing: number;
+    /** Converted and paying. */
+    active: number;
+    /** Cancelled but still inside the paid period. */
+    cancelling: number;
   };
 }
 

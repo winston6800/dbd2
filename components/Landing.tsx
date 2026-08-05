@@ -113,10 +113,10 @@ export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = 
           and watch your little army chip it to zero.
         </p>
         <button onClick={start} style={primaryButton}>
-          Start your fight
+          Start free trial
         </button>
         <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.8px', color: COLORS.metaText }}>
-          $20 ONCE · NO SUBSCRIPTION
+          3 DAYS FREE · THEN $20 / MONTH · CANCEL ANY TIME
         </span>
       </div>
 
@@ -189,10 +189,11 @@ export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = 
 
       {/* Price */}
       <div style={{ ...card, textAlign: 'center' }}>
-        <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>$20, once</div>
+        <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>3 days free, then $20/mo</div>
         <div style={{ fontSize: 13, color: COLORS.mutedText, marginTop: 4, marginBottom: 14 }}>
-          Pay once and it is yours — no subscription, no renewal, no email in a year telling you the
-          price went up. Unlimited mini-bosses and tasks, synced across your devices.
+          Try it for three days without paying. We take a card up front so it keeps working when the
+          trial ends — cancel before then and you are not charged, and cancelling later takes two
+          clicks. Unlimited mini-bosses and tasks, synced across your devices.
         </div>
         <button onClick={start} style={primaryButton}>
           Start your fight

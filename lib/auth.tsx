@@ -1,18 +1,18 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
-import { supabase, getPurchase, type Purchase } from './supabase';
+import { supabase, getSubscription, type Subscription } from './supabase';
 
 interface AuthState {
   user: User | null;
   session: Session | null;
-  /** Non-null once the user has paid. Access never expires. */
-  purchase: Purchase | null;
+  /** Non-null while the subscription grants access (trialing or active). */
+  subscription: Subscription | null;
   loading: boolean;
-  purchaseLoading: boolean;
+  subscriptionLoading: boolean;
   signUp: (email: string, password: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
-  refreshPurchase: () => Promise<void>;
+  refreshSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -20,22 +20,22 @@ const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [purchase, setPurchase] = useState<Purchase | null>(null);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
-  const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
 
-  const loadPurchase = useCallback(async (userId: string) => {
-    setPurchaseLoading(true);
-    const found = await getPurchase(userId);
-    setPurchase(found);
-    setPurchaseLoading(false);
+  const loadSubscription = useCallback(async (userId: string) => {
+    setSubscriptionLoading(true);
+    const found = await getSubscription(userId);
+    setSubscription(found);
+    setSubscriptionLoading(false);
   }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) loadPurchase(session.user.id);
+      if (session?.user) loadSubscription(session.user.id);
       setLoading(false);
     });
 
@@ -43,14 +43,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        loadPurchase(session.user.id);
+        loadSubscription(session.user.id);
       } else {
-        setPurchase(null);
+        setSubscription(null);
       }
     });
 
     return () => listener.unsubscribe();
-  }, [loadPurchase]);
+  }, [loadSubscription]);
 
   const signUp = async (email: string, password: string) => {
     const { error } = await supabase.auth.signUp({ email, password });
@@ -66,13 +66,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const refreshPurchase = async () => {
-    if (user) await loadPurchase(user.id);
+  const refreshSubscription = async () => {
+    if (user) await loadSubscription(user.id);
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, session, purchase, loading, purchaseLoading, signUp, signIn, signOut, refreshPurchase }}
+      value={{
+        user,
+        session,
+        subscription,
+        loading,
+        subscriptionLoading,
+        signUp,
+        signIn,
+        signOut,
+        refreshSubscription,
+      }}
     >
       {children}
     </AuthContext.Provider>
