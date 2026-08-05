@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './styles/monsterGoals.css';
 import { AuthProvider, useAuth } from './lib/auth';
 import { AuthScreen } from './components/AuthScreen';
-import { SubscriptionGate } from './components/SubscriptionGate';
+import { PurchaseGate } from './components/PurchaseGate';
 import { Landing } from './components/Landing';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { MonsterGoalsApp } from './components/MonsterGoals/MonsterGoalsApp';
@@ -27,29 +27,29 @@ const Splash: React.FC<{ label: string }> = ({ label }) => (
 );
 
 /**
- * Hard gate: sign in, then subscribe, then the board. No part of the game is
+ * Hard gate: sign in, then pay once, then the board. No part of the game is
  * reachable without both — logged-out visitors get the landing page, which
  * explains the product and states the price before asking for an email.
  */
 const AppGate: React.FC = () => {
-  const { user, subscription, loading, subscriptionLoading, refreshSubscription } = useAuth();
+  const { user, purchase, loading, purchaseLoading, refreshPurchase } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
 
   // Handle returning from Stripe checkout.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
-      // Give the webhook a moment to land, then re-read the subscription.
-      const timer = setTimeout(() => refreshSubscription(), 3000);
+      // Give the webhook a moment to land, then re-read the entitlement.
+      const timer = setTimeout(() => refreshPurchase(), 3000);
       window.history.replaceState({}, '', window.location.pathname);
       return () => clearTimeout(timer);
     }
-  }, [refreshSubscription]);
+  }, [refreshPurchase]);
 
   // Marks the end of the funnel: signed in, paid, and through the gate.
   useEffect(() => {
-    if (subscription) trackOnce('subscription_active');
-  }, [subscription]);
+    if (purchase) trackOnce('purchase_completed');
+  }, [purchase]);
 
   if (loading) return <Splash label="Waking the monsters…" />;
 
@@ -69,9 +69,9 @@ const AppGate: React.FC = () => {
 
   if (isAdmin) return <MonsterGoalsApp />;
 
-  if (subscriptionLoading) return <Splash label="Checking your subscription…" />;
+  if (purchaseLoading) return <Splash label="Checking your access…" />;
 
-  if (!subscription) return <SubscriptionGate />;
+  if (!purchase) return <PurchaseGate />;
 
   return <MonsterGoalsApp />;
 };

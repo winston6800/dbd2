@@ -116,7 +116,7 @@ export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = 
           Start your fight
         </button>
         <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.8px', color: COLORS.metaText }}>
-          $20 / MONTH · CANCEL ANYTIME
+          $20 ONCE · NO SUBSCRIPTION
         </span>
       </div>
 
@@ -189,10 +189,10 @@ export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = 
 
       {/* Price */}
       <div style={{ ...card, textAlign: 'center' }}>
-        <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>$20 a month</div>
+        <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>$20, once</div>
         <div style={{ fontSize: 13, color: COLORS.mutedText, marginTop: 4, marginBottom: 14 }}>
-          Unlimited mini-bosses and tasks, synced across your devices. No free tier — you sign in, you
-          subscribe, you fight.
+          Pay once and it is yours — no subscription, no renewal, no email in a year telling you the
+          price went up. Unlimited mini-bosses and tasks, synced across your devices.
         </div>
         <button onClick={start} style={primaryButton}>
           Start your fight

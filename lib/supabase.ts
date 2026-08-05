@@ -5,22 +5,24 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-export interface Subscription {
-  id: string;
+/** A one-time purchase. Its existence is the entitlement — there is no expiry. */
+export interface Purchase {
   user_id: string;
-  stripe_customer_id: string;
-  stripe_subscription_id: string;
-  status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid';
-  current_period_end: string;
+  stripe_customer_id: string | null;
+  stripe_payment_intent_id: string;
+  stripe_checkout_session_id: string | null;
+  amount_total: number;
+  currency: string;
+  status: 'paid' | 'refunded';
   created_at: string;
 }
 
-export async function getSubscription(userId: string): Promise<Subscription | null> {
+export async function getPurchase(userId: string): Promise<Purchase | null> {
   const { data, error } = await supabase
-    .from('subscriptions')
+    .from('purchases')
     .select('*')
     .eq('user_id', userId)
-    .in('status', ['active', 'trialing'])
+    .eq('status', 'paid')
     .maybeSingle();
   if (error) return null;
   return data;

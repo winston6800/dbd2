@@ -5,6 +5,9 @@ import { BLOB_RADIUS, COLORS, DISPLAY_FONT, PAPER_BACKGROUND } from '../lib/mons
 import { MonsterFace } from './MonsterGoals/MonsterFace';
 
 /**
+ * The one-time paywall. Access is granted by a single $20 payment and never
+ * expires, so there is nothing here about renewals or cancelling.
+ *
  * The handoff explicitly does not cover billing/payments UI ("Not yet
  * designed"). This gate is assembled from the documented design tokens so it
  * reads as the same product, but it is an extension — worth a designer's eye
@@ -16,6 +19,7 @@ const FEATURES = [
   'Unlimited mini-bosses and tasks',
   'Deploy Milk units and watch them fight',
   'Your boss chain saved and synced across devices',
+  'Pay once — no renewal, no expiry',
   'Defeat animations and the graveyard trail',
   'A named monster for every sub-goal',
 ];
@@ -41,14 +45,14 @@ const linkStyle: React.CSSProperties = {
   fontFamily: 'inherit',
 };
 
-export const SubscriptionGate: React.FC = () => {
-  const { user, signOut, refreshSubscription, subscriptionLoading } = useAuth();
+export const PurchaseGate: React.FC = () => {
+  const { user, signOut, refreshPurchase, purchaseLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => trackOnce('paywall_view'), []);
 
-  const handleSubscribe = async () => {
+  const handleBuy = async () => {
     setLoading(true);
     setError(null);
     track('checkout_started');
@@ -67,10 +71,10 @@ export const SubscriptionGate: React.FC = () => {
     }
   };
 
-  if (subscriptionLoading) {
+  if (purchaseLoading) {
     return (
       <div style={pageStyle}>
-        <div style={{ color: COLORS.mutedText, fontSize: 14 }}>Checking your subscription…</div>
+        <div style={{ color: COLORS.mutedText, fontSize: 14 }}>Checking your access…</div>
       </div>
     );
   }
@@ -104,7 +108,7 @@ export const SubscriptionGate: React.FC = () => {
 
         <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>Arm yourself</div>
         <div style={{ color: COLORS.mutedText, fontSize: 14, marginTop: -12 }}>
-          Monster Goals is a subscription. Cancel any time.
+          One payment. No subscription, no renewal.
         </div>
 
         <div
@@ -120,7 +124,7 @@ export const SubscriptionGate: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
             <span style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>$20</span>
             <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.8px', color: COLORS.metaText }}>
-              PER MONTH
+              ONCE
             </span>
           </div>
 
@@ -179,7 +183,7 @@ export const SubscriptionGate: React.FC = () => {
         )}
 
         <button
-          onClick={handleSubscribe}
+          onClick={handleBuy}
           disabled={loading}
           style={{
             width: '100%',
@@ -195,15 +199,15 @@ export const SubscriptionGate: React.FC = () => {
             opacity: loading ? 0.6 : 1,
           }}
         >
-          {loading ? 'Redirecting…' : 'Subscribe — $20/mo'}
+          {loading ? 'Redirecting…' : 'Buy access — $20'}
         </button>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', marginTop: -8 }}>
           <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.8px', color: COLORS.metaText }}>
-            CANCEL ANYTIME · POWERED BY STRIPE
+            ONE-TIME PAYMENT · POWERED BY STRIPE
           </span>
-          <button onClick={() => void refreshSubscription()} style={{ ...linkStyle, color: COLORS.ink, fontWeight: 700 }}>
-            I already subscribed — refresh
+          <button onClick={() => void refreshPurchase()} style={{ ...linkStyle, color: COLORS.ink, fontWeight: 700 }}>
+            I already paid — refresh
           </button>
           <button onClick={() => void signOut()} style={{ ...linkStyle, color: COLORS.mutedText, fontSize: 12 }}>
             Sign out ({user?.email})

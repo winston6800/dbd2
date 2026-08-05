@@ -24,7 +24,7 @@ const STAGE_LABELS: Record<string, string> = {
   landing_cta_click: 'Clicked start',
   signup_completed: 'Signed up',
   checkout_started: 'Started checkout',
-  subscription_active: 'Subscribed',
+  purchase_completed: 'Paid',
 };
 
 const RANGES = [7, 14, 30] as const;
@@ -95,7 +95,9 @@ export const AnalyticsDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
   const referrerMax = Math.max(1, ...(data?.referrers ?? []).map(r => r.sessions));
   const totals = data?.totals;
   const conversion =
-    totals && totals.visitors > 0 ? `${((totals.subscribers / totals.visitors) * 100).toFixed(1)}%` : '—';
+    totals && totals.visitors > 0 ? `${((totals.customers / totals.visitors) * 100).toFixed(1)}%` : '—';
+  // Stripe reports amounts in the smallest currency unit.
+  const revenue = totals ? `$${(totals.revenue / 100).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—';
 
   const page: React.CSSProperties = {
     minHeight: '100vh',
@@ -198,8 +200,8 @@ export const AnalyticsDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }} className="mg-kpi-row">
               <StatTile label="Visitors" value={totals?.visitors ?? 0} />
               <StatTile label="Signups" value={totals?.signups ?? 0} />
-              <StatTile label="Checkouts" value={totals?.checkouts ?? 0} />
-              <StatTile label="Subscribers" value={totals?.subscribers ?? 0} note={`${conversion} of visitors`} />
+              <StatTile label="Customers" value={totals?.customers ?? 0} note={`${conversion} of visitors`} />
+              <StatTile label="Revenue" value={revenue} note="gross, before Stripe fees" />
             </div>
 
             {/* Funnel — ordered stages, so an ordinal ramp carries depth. */}

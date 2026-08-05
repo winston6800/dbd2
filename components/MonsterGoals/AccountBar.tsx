@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { COLORS } from '../../lib/monster/tokens';
 import { useAuth } from '../../lib/auth';
 
@@ -27,42 +27,21 @@ function isAdmin(email: string | undefined): boolean {
     .includes(email.toLowerCase());
 }
 
-/** Signed-in account controls: analytics, Stripe billing portal, sign out. */
+/**
+ * Signed-in account controls.
+ *
+ * There is no billing link: access is a one-time purchase, so there is no
+ * subscription to manage, cancel or renew. Stripe emails the receipt.
+ */
 export const AccountBar: React.FC<{ onOpenAnalytics?: () => void }> = ({ onOpenAnalytics }) => {
-  const { user, subscription, signOut } = useAuth();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const openBillingPortal = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/create-portal-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user!.id }),
-      });
-      if (!res.ok) throw new Error('Could not open the billing portal');
-      const { url } = await res.json();
-      window.location.href = url;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
-      setBusy(false);
-    }
-  };
+  const { user, signOut } = useAuth();
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 11, color: COLORS.metaText }}>
-      {error && <span style={{ color: '#a3564f' }}>{error}</span>}
       <span>{user?.email}</span>
       {onOpenAnalytics && isAdmin(user?.email) && (
         <button type="button" onClick={onOpenAnalytics} style={linkStyle}>
           Analytics
-        </button>
-      )}
-      {subscription && (
-        <button type="button" onClick={openBillingPortal} disabled={busy} style={linkStyle}>
-          {busy ? 'Opening…' : 'Manage billing'}
         </button>
       )}
       <button type="button" onClick={() => void signOut()} style={linkStyle}>

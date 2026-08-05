@@ -6,13 +6,14 @@ Two gates stand in front of the game, in order:
 
 1. **Sign in** (`AuthScreen`) — email and password via Supabase. Sign-up sends a confirmation email;
    the account is not usable until the link is clicked.
-2. **Subscribe** (`SubscriptionGate`) — $20/month via Stripe Checkout. On return from Checkout the app
-   waits 3 seconds for the webhook to land, then re-reads the subscription.
+2. **Buy access** (`PurchaseGate`) — a single $20 payment via Stripe Checkout (`mode: payment`). On
+   return from Checkout the app waits 3 seconds for the webhook to land, then re-reads the purchase.
+   Access never expires, so there is nothing to renew or cancel.
 
 Emails listed in `VITE_ADMIN_EMAILS` skip the second gate entirely.
 
-Signed-in users get an account row above the board: their email, **Manage billing** (Stripe customer
-portal, shown only when a subscription exists), and **Sign out**.
+Signed-in users get an account row above the board: their email, **Analytics** (admins only), and
+**Sign out**. There is no billing link — a one-time purchase has nothing to manage.
 
 ## Screens
 

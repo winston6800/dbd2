@@ -48,7 +48,7 @@ describe('track', () => {
     // event's attribution has to stick for the whole session.
     track('landing_view');
     const first = inserted[0];
-    track('subscription_active');
+    track('purchase_completed');
 
     expect(inserted[1].referrer).toBe(first.referrer);
     expect(inserted[1].utm_source).toBe(first.utm_source);
