@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { getStripe, getStripeConfig } from './_stripe';
+import { getStripe, getStripeConfig } from './_stripe.js';
 
 export const config = { api: { bodyParser: false } };
 
