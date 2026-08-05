@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type Stripe from 'stripe';
-import { handleStripeEvent } from './stripe-webhook';
+import { handleStripeEvent } from '../api/stripe-webhook';
 
 /**
  * Drives the real webhook handler through a full subscription lifecycle using
