@@ -165,6 +165,39 @@ select status, trial_end, current_period_end, cancel_at_period_end
 from public.subscriptions;
 ```
 
+### Verifying live mode without paying
+
+Test mode proves the code. It cannot prove the live wiring, because test and live are separate
+universes in Stripe — separate keys, prices, webhook endpoints and signing secrets. These only ever
+fail in live:
+
+| Failure | Symptom |
+|---|---|
+| Live price ID missing (created in test only) | Checkout 500s |
+| Live webhook not created, or wrong URL | **Card charged, no access** |
+| Live signing secret mismatched | Every event 400s, same result |
+| `STRIPE_MODE` still `test` in production | Startup throws, or wrong keys used |
+| Stripe account not activated for live charges | Cannot charge at all |
+| Vercel env var scoped to Preview, not Production | Works in preview, dies in prod |
+
+**The trial makes this free to check.** Live checkout charges nothing up front, so:
+
+1. Set `STRIPE_MODE=live` on Production with the live key, price ID and webhook secret.
+2. Sign up with a real card on an email that is **not** in `VITE_ADMIN_EMAILS` — an admin email skips
+   the gate and the test proves nothing.
+3. Checkout completes. $0 is charged and the subscription is created as `trialing`.
+4. Confirm the webhook landed:
+   `select status, trial_end from public.subscriptions;` → `trialing`, and the board loads.
+5. Cancel via **Manage subscription**. You are never charged.
+
+That exercises the live price, webhook, signing secret, entitlement write and cancel path for nothing.
+
+The only thing left uncovered is the conversion charge itself, three days later. Stripe test clocks
+are test-mode only, so live cannot be time-warped. Either verify conversion in test mode with a test
+clock (the logic is identical — only credentials differ), or let one live trial convert and refund the
+$20 from the dashboard. Stripe generally does not return the processing fee on a refund, so that costs
+roughly the fee rather than the twenty.
+
 ## Launch checklist
 
 Before pointing traffic at this:
