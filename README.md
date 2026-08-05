@@ -180,7 +180,19 @@ fail in live:
 | Stripe account not activated for live charges | Cannot charge at all |
 | Vercel env var scoped to Preview, not Production | Works in preview, dies in prod |
 
-**The trial makes this free to check.** Live checkout charges nothing up front, so:
+**First, check the config without any transaction.** Set `HEALTH_CHECK_TOKEN` to a long random
+string, then:
+
+```bash
+curl "https://deadbydefault.app/api/stripe-health?token=YOUR_TOKEN"
+```
+
+It verifies the API key works, the account is enabled for charges, the price exists **in this mode**
+and is recurring, and that a webhook endpoint is subscribed to the events the app needs. That catches
+every live-only misconfiguration except a mismatched signing secret, which only a delivered event can
+prove. The endpoint 404s unless the token is set.
+
+**Then confirm end to end — the trial makes this free.** Live checkout charges nothing up front, so:
 
 1. Set `STRIPE_MODE=live` on Production with the live key, price ID and webhook secret.
 2. Sign up with a real card on an email that is **not** in `VITE_ADMIN_EMAILS` — an admin email skips
