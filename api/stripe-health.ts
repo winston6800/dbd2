@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getStripe, getStripeConfig } from './_stripe';
+import { getStripe, getStripeConfig } from './_stripe.js';
 
 /**
  * Checks the Stripe configuration without moving money.
