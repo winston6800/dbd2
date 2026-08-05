@@ -14,6 +14,8 @@ vi.mock('../../lib/auth', () => ({
 // No network in tests: the cloud read fails, so the board falls back to
 // localStorage — the same degraded path a user gets when they are offline.
 vi.mock('../../lib/supabase', () => ({
+  isTrialing: () => false,
+  trialDaysLeft: () => 0,
   supabase: {
     from: () => ({
       select: () => ({

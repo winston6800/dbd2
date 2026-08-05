@@ -16,6 +16,7 @@ export type AnalyticsEvent =
   | 'signup_completed'
   | 'paywall_view'
   | 'checkout_started'
+  | 'trial_started'
   | 'subscription_active'
   | 'goal_created'
   | 'boss_added'
@@ -48,7 +49,7 @@ function readSessionId(): string {
 }
 
 /**
- * Captured once per session and reused. By the time someone subscribes the
+ * Captured once per session and reused. By the time someone pays, the
  * referrer is long gone from `document.referrer`, so attribution has to be
  * pinned at first contact — that is the whole point of running a campaign.
  */
@@ -137,7 +138,12 @@ export interface AnalyticsSummary {
     visitors: number;
     signups: number;
     checkouts: number;
-    subscribers: number;
+    /** Currently in a free trial. */
+    trialing: number;
+    /** Converted and paying. */
+    active: number;
+    /** Cancelled but still inside the paid period. */
+    cancelling: number;
   };
 }
 

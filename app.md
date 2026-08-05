@@ -6,13 +6,21 @@ Two gates stand in front of the game, in order:
 
 1. **Sign in** (`AuthScreen`) — email and password via Supabase. Sign-up sends a confirmation email;
    the account is not usable until the link is clicked.
-2. **Subscribe** (`SubscriptionGate`) — $20/month via Stripe Checkout. On return from Checkout the app
-   waits 3 seconds for the webhook to land, then re-reads the subscription.
+2. **Start a trial** (`SubscriptionGate`) — Stripe Checkout in `subscription` mode with a 3-day free
+   trial. A card is collected up front so the trial converts on its own; the gate says so plainly. On
+   return from Checkout the app waits 3 seconds for the webhook to land, then re-reads the
+   subscription.
+
+Access is granted while the subscription status is `trialing` or `active`. Cancelling sets
+`cancel_at_period_end` and access continues until the period ends — the user keeps what they paid
+for.
 
 Emails listed in `VITE_ADMIN_EMAILS` skip the second gate entirely.
 
-Signed-in users get an account row above the board: their email, **Manage billing** (Stripe customer
-portal, shown only when a subscription exists), and **Sign out**.
+Signed-in users get an account row above the board: a trial countdown while trialing, a "cancels at
+period end" marker after cancelling, their email, **Analytics** (admins only), **Manage subscription**
+(the Stripe billing portal, where cancelling happens), and **Sign out**. The countdown is deliberately
+visible — the card is charged automatically, so nobody should be surprised by it.
 
 ## Screens
 

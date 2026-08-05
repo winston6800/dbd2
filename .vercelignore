@@ -1,0 +1,5 @@
+# Tests must never be deployed as serverless functions — anything in /api
+# becomes an endpoint, and these import devDependencies.
+**/*.test.ts
+**/*.test.tsx
+test/

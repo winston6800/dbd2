@@ -1,14 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
+import { getStripe } from './_stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
+/**
+ * Opens the Stripe billing portal, which is where a subscriber cancels,
+ * resumes, or updates their card. Cancelling there sets
+ * `cancel_at_period_end`, and the resulting webhook keeps access alive until
+ * the period actually ends.
+ */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -25,7 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const appUrl = process.env.APP_URL || `https://${req.headers.host}`;
 
-  const session = await stripe.billingPortal.sessions.create({
+  const session = await getStripe().billingPortal.sessions.create({
     customer: sub.stripe_customer_id,
     return_url: appUrl,
   });

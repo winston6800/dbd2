@@ -5,6 +5,10 @@ import { BLOB_RADIUS, COLORS, DISPLAY_FONT, PAPER_BACKGROUND } from '../lib/mons
 import { MonsterFace } from './MonsterGoals/MonsterFace';
 
 /**
+ * The paywall. A card is collected up front and the trial converts on its own,
+ * so the trial length and the price after it must both be stated plainly here —
+ * a surprise charge is the fastest way to earn a chargeback.
+ *
  * The handoff explicitly does not cover billing/payments UI ("Not yet
  * designed"). This gate is assembled from the documented design tokens so it
  * reads as the same product, but it is an extension — worth a designer's eye
@@ -17,8 +21,10 @@ const FEATURES = [
   'Deploy Milk units and watch them fight',
   'Your boss chain saved and synced across devices',
   'Defeat animations and the graveyard trail',
-  'A named monster for every sub-goal',
+  'Cancel in two clicks, any time',
 ];
+
+const TRIAL_DAYS = 3;
 
 const pageStyle: React.CSSProperties = {
   minHeight: '100vh',
@@ -48,7 +54,7 @@ export const SubscriptionGate: React.FC = () => {
 
   useEffect(() => trackOnce('paywall_view'), []);
 
-  const handleSubscribe = async () => {
+  const handleBuy = async () => {
     setLoading(true);
     setError(null);
     track('checkout_started');
@@ -70,7 +76,7 @@ export const SubscriptionGate: React.FC = () => {
   if (subscriptionLoading) {
     return (
       <div style={pageStyle}>
-        <div style={{ color: COLORS.mutedText, fontSize: 14 }}>Checking your subscription…</div>
+        <div style={{ color: COLORS.mutedText, fontSize: 14 }}>Checking your access…</div>
       </div>
     );
   }
@@ -102,9 +108,12 @@ export const SubscriptionGate: React.FC = () => {
           <MonsterFace variant={2} />
         </div>
 
-        <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>Arm yourself</div>
+        <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>
+          Start your {TRIAL_DAYS}-day free trial
+        </div>
         <div style={{ color: COLORS.mutedText, fontSize: 14, marginTop: -12 }}>
-          Monster Goals is a subscription. Cancel any time.
+          Free for {TRIAL_DAYS} days, then $20 a month. Cancel any time before it ends and you are not
+          charged.
         </div>
 
         <div
@@ -120,7 +129,7 @@ export const SubscriptionGate: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
             <span style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>$20</span>
             <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.8px', color: COLORS.metaText }}>
-              PER MONTH
+              PER MONTH, AFTER THE TRIAL
             </span>
           </div>
 
@@ -179,7 +188,7 @@ export const SubscriptionGate: React.FC = () => {
         )}
 
         <button
-          onClick={handleSubscribe}
+          onClick={handleBuy}
           disabled={loading}
           style={{
             width: '100%',
@@ -195,12 +204,12 @@ export const SubscriptionGate: React.FC = () => {
             opacity: loading ? 0.6 : 1,
           }}
         >
-          {loading ? 'Redirecting…' : 'Subscribe — $20/mo'}
+          {loading ? 'Redirecting…' : `Start ${TRIAL_DAYS}-day free trial`}
         </button>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', marginTop: -8 }}>
           <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.8px', color: COLORS.metaText }}>
-            CANCEL ANYTIME · POWERED BY STRIPE
+            CARD REQUIRED · CANCEL ANY TIME · POWERED BY STRIPE
           </span>
           <button onClick={() => void refreshSubscription()} style={{ ...linkStyle, color: COLORS.ink, fontWeight: 700 }}>
             I already subscribed — refresh

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { COLORS } from '../../lib/monster/tokens';
 import { useAuth } from '../../lib/auth';
+import { isTrialing, trialDaysLeft } from '../../lib/supabase';
 
 const linkStyle: React.CSSProperties = {
   background: 'none',
@@ -27,7 +28,14 @@ function isAdmin(email: string | undefined): boolean {
     .includes(email.toLowerCase());
 }
 
-/** Signed-in account controls: analytics, Stripe billing portal, sign out. */
+/**
+ * Signed-in account controls.
+ *
+ * The trial countdown is deliberately visible: the card is charged
+ * automatically when the trial ends, so the user should never be surprised by
+ * it. **Manage subscription** opens the Stripe billing portal, which is where
+ * cancelling happens.
+ */
 export const AccountBar: React.FC<{ onOpenAnalytics?: () => void }> = ({ onOpenAnalytics }) => {
   const { user, subscription, signOut } = useAuth();
   const [busy, setBusy] = useState(false);
@@ -51,10 +59,34 @@ export const AccountBar: React.FC<{ onOpenAnalytics?: () => void }> = ({ onOpenA
     }
   };
 
+  const daysLeft = trialDaysLeft(subscription);
+  const cancelling = subscription?.cancel_at_period_end === true;
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 11, color: COLORS.metaText }}>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        fontSize: 11,
+        color: COLORS.metaText,
+        flexWrap: 'wrap',
+        justifyContent: 'flex-end',
+      }}
+    >
       {error && <span style={{ color: '#a3564f' }}>{error}</span>}
+
+      {isTrialing(subscription) && (
+        <span style={{ fontWeight: 800, letterSpacing: '0.5px', color: COLORS.doneGlyph }}>
+          TRIAL · {daysLeft} DAY{daysLeft === 1 ? '' : 'S'} LEFT
+        </span>
+      )}
+      {cancelling && (
+        <span style={{ fontWeight: 800, letterSpacing: '0.5px' }}>CANCELS AT PERIOD END</span>
+      )}
+
       <span>{user?.email}</span>
+
       {onOpenAnalytics && isAdmin(user?.email) && (
         <button type="button" onClick={onOpenAnalytics} style={linkStyle}>
           Analytics
@@ -62,7 +94,7 @@ export const AccountBar: React.FC<{ onOpenAnalytics?: () => void }> = ({ onOpenA
       )}
       {subscription && (
         <button type="button" onClick={openBillingPortal} disabled={busy} style={linkStyle}>
-          {busy ? 'Opening…' : 'Manage billing'}
+          {busy ? 'Opening…' : 'Manage subscription'}
         </button>
       )}
       <button type="button" onClick={() => void signOut()} style={linkStyle}>

@@ -24,7 +24,7 @@ const STAGE_LABELS: Record<string, string> = {
   landing_cta_click: 'Clicked start',
   signup_completed: 'Signed up',
   checkout_started: 'Started checkout',
-  subscription_active: 'Subscribed',
+  trial_started: 'Started trial',
 };
 
 const RANGES = [7, 14, 30] as const;
@@ -94,8 +94,12 @@ export const AnalyticsDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
   const dailyMax = Math.max(1, ...(data?.daily ?? []).map(d => d.visitors));
   const referrerMax = Math.max(1, ...(data?.referrers ?? []).map(r => r.sessions));
   const totals = data?.totals;
-  const conversion =
-    totals && totals.visitors > 0 ? `${((totals.subscribers / totals.visitors) * 100).toFixed(1)}%` : '—';
+  // Trial-to-paid is the number that decides whether a 3-day trial is working.
+  const trialConversion =
+    totals && totals.trialing + totals.active > 0
+      ? `${((totals.active / (totals.trialing + totals.active)) * 100).toFixed(0)}% of trials`
+      : '—';
+  const mrr = totals ? `$${(totals.active * 20).toLocaleString()}` : '—';
 
   const page: React.CSSProperties = {
     minHeight: '100vh',
@@ -198,8 +202,8 @@ export const AnalyticsDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }} className="mg-kpi-row">
               <StatTile label="Visitors" value={totals?.visitors ?? 0} />
               <StatTile label="Signups" value={totals?.signups ?? 0} />
-              <StatTile label="Checkouts" value={totals?.checkouts ?? 0} />
-              <StatTile label="Subscribers" value={totals?.subscribers ?? 0} note={`${conversion} of visitors`} />
+              <StatTile label="On trial" value={totals?.trialing ?? 0} note={`${totals?.cancelling ?? 0} cancelling`} />
+              <StatTile label="Paying" value={mrr} note={`MRR · ${trialConversion}`} />
             </div>
 
             {/* Funnel — ordered stages, so an ordinal ramp carries depth. */}

@@ -5,6 +5,7 @@ import { supabase, getSubscription, type Subscription } from './supabase';
 interface AuthState {
   user: User | null;
   session: Session | null;
+  /** Non-null while the subscription grants access (trialing or active). */
   subscription: Subscription | null;
   loading: boolean;
   subscriptionLoading: boolean;
@@ -25,8 +26,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadSubscription = useCallback(async (userId: string) => {
     setSubscriptionLoading(true);
-    const sub = await getSubscription(userId);
-    setSubscription(sub);
+    const found = await getSubscription(userId);
+    setSubscription(found);
     setSubscriptionLoading(false);
   }, []);
 
@@ -70,7 +71,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, subscription, loading, subscriptionLoading, signUp, signIn, signOut, refreshSubscription }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        subscription,
+        loading,
+        subscriptionLoading,
+        signUp,
+        signIn,
+        signOut,
+        refreshSubscription,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
