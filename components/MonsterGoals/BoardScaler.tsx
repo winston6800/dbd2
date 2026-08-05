@@ -2,33 +2,42 @@ import React, { useEffect, useRef, useState } from 'react';
 import { BOARD_H } from '../../lib/monster/layout';
 
 const BOARD_W = 800;
+const MAX_SCALE = 1.6;
 
 /**
  * The battle board is a fixed 800×640 composition — the handoff's layout math
  * (orbit radius, node steps, label chords) is written in absolute px against
- * that box. Reflowing it for phones would mean inventing a second layout the
- * design doesn't specify, so instead the whole board is scaled down as a unit
- * and the wrapper collapses to the scaled height so nothing below it floats.
+ * that box. Reflowing it would mean inventing a second layout the design does
+ * not specify, so the whole board is scaled as a unit instead.
  *
- * At >=800px wide this is a no-op.
+ * The scale is limited by whichever axis runs out first: width on a phone,
+ * height on a short laptop screen. Measuring the slot rather than the board
+ * itself avoids a feedback loop, since the board's rendered size is what the
+ * scale produces.
  */
 export const BoardScaler: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const ref = useRef<HTMLDivElement>(null);
+  const slot = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
   useEffect(() => {
-    const el = ref.current;
+    const el = slot.current;
     if (!el) return;
 
     const measure = () => {
       const width = el.clientWidth;
-      if (width > 0) setScale(Math.min(1, width / BOARD_W));
+      const height = el.clientHeight;
+      if (width <= 0) return;
+      // Height is only a constraint when the slot actually has one; in the
+      // stacked mobile layout it grows to fit instead.
+      const byWidth = width / BOARD_W;
+      const byHeight = height > 0 ? height / BOARD_H : Infinity;
+      // Scaling up is allowed so a large screen is actually used, capped so the
+      // board never turns into a billboard on an ultrawide.
+      setScale(Math.min(byWidth, byHeight, MAX_SCALE));
     };
 
     measure();
 
-    // ResizeObserver is missing in some test environments; the initial measure
-    // above is enough there.
     if (typeof ResizeObserver === 'undefined') {
       window.addEventListener('resize', measure);
       return () => window.removeEventListener('resize', measure);
@@ -40,7 +49,7 @@ export const BoardScaler: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   return (
-    <div ref={ref} className="mg-board-scaler" style={{ height: BOARD_H * scale }}>
+    <div ref={slot} className="mg-board-slot">
       <div className="mg-board-fixed" style={{ transform: `scale(${scale})` }}>
         {children}
       </div>

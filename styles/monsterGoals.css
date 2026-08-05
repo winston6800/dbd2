@@ -138,17 +138,17 @@ body {
   }
 }
 
-.mg-scroll {
-  max-height: 210px;
-  overflow-y: auto;
-  padding-right: 6px;
-}
-
 /* ---------------------------------------------------------------------------
-   Responsive
-   The board is a fixed 800x640 composition by design, so rather than reflow it
-   (which would break the layout math the handoff specifies), it is scaled down
-   as a unit on narrow screens. Everything else reflows normally.
+   Layout
+
+   The app is meant to fit one screen with no scrolling: the board on the left,
+   the queue on a rail to the right, both sized to the viewport. The board is a
+   fixed 800x640 composition by design, so it is scaled as a unit rather than
+   reflowed (see BoardScaler).
+
+   Below the breakpoint, or on a short window, this collapses back to a normal
+   stacked, scrollable page - one screen is not a goal worth pursuing on a
+   phone.
    --------------------------------------------------------------------------- */
 
 html,
@@ -156,14 +156,118 @@ body {
   overflow-x: hidden;
 }
 
-.mg-board-scaler {
-  width: 100%;
+/* Fills the viewport and never scrolls; children negotiate for the space. */
+.mg-shell {
+  height: 100dvh;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 20px 18px;
+  gap: 10px;
+}
+
+.mg-shell-inner {
+  width: 100%;
+  max-width: 1240px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Board column + queue rail. min-height:0 lets the grid actually shrink its
+   children rather than overflowing, which is what forces a page scrollbar. */
+.mg-main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 14px;
+  align-items: stretch;
+}
+
+/* Centres the board in whatever space is left. The scaled board keeps its
+   unscaled 800x640 layout box, so centring plus overflow:hidden is what keeps
+   it visually centred at any scale. */
+.mg-board-slot {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mg-board-fixed {
   width: 800px;
-  transform-origin: top left;
+  height: 640px;
+  flex: none;
+  transform-origin: center center;
+}
+
+.mg-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* The queue card takes whatever height is left over. */
+.mg-queue-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mg-queue-card .mg-scroll {
+  flex: 1;
+  max-height: none;
+}
+
+/* Stacked fallback: narrow windows, and short ones where squeezing everything
+   in would leave the board unreadably small. */
+@media (max-width: 1000px), (max-height: 620px) {
+  .mg-shell {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+    padding: 20px 20px 60px;
+    gap: 14px;
+  }
+
+  .mg-shell-inner {
+    max-width: 800px;
+    flex: none;
+  }
+
+  .mg-main {
+    flex: none;
+    grid-template-columns: 1fr;
+  }
+
+  .mg-board-slot {
+    height: auto;
+    aspect-ratio: 800 / 640;
+  }
+
+  .mg-queue-card {
+    flex: none;
+  }
+
+  .mg-queue-card .mg-scroll {
+    flex: none;
+    max-height: 210px;
+  }
+}
+
+.mg-scroll {
+  max-height: 210px;
+  overflow-y: auto;
+  padding-right: 6px;
 }
 
 /* Flex lives here rather than inline so the media query below can override it —

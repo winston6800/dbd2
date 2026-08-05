@@ -20,11 +20,12 @@ export const TaskQueue: React.FC<TaskQueueProps> = ({ tasks, onComplete }) => {
 
   return (
     <div
+      className="mg-queue-card"
       style={{
         background: COLORS.surface,
         border: `2px solid ${COLORS.ink}`,
         borderRadius: 14,
-        padding: '16px 18px',
+        padding: '14px 16px',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
