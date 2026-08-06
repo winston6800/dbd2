@@ -48,7 +48,7 @@ const linkStyle: React.CSSProperties = {
 };
 
 export const SubscriptionGate: React.FC = () => {
-  const { user, signOut, refreshSubscription, subscriptionLoading } = useAuth();
+  const { user, session, signOut, refreshSubscription, subscriptionLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,10 +59,12 @@ export const SubscriptionGate: React.FC = () => {
     setError(null);
     track('checkout_started');
     try {
+      // The server derives the account from this token — it never trusts a
+      // client-supplied id, which would otherwise let anyone start (or
+      // overwrite) a subscription for someone else's account.
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user!.id, email: user!.email }),
+        headers: { Authorization: `Bearer ${session?.access_token}` },
       });
       if (!res.ok) throw new Error('Failed to create checkout session');
       const { url } = await res.json();

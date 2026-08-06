@@ -210,6 +210,33 @@ clock (the logic is identical — only credentials differ), or let one live tria
 $20 from the dashboard. Stripe generally does not return the processing fee on a refund, so that costs
 roughly the fee rather than the twenty.
 
+## Security
+
+A few things worth knowing about how access is enforced, and one real bug fixed here:
+
+- **Checkout and the billing portal verify the caller's session — they no longer trust a client-
+  supplied id.** Both endpoints used to take a `userId` straight from the request body. Since the
+  Supabase anon key is public, anyone could POST an arbitrary `userId` and get back a stranger's
+  Stripe billing portal link (their card, invoices, and a cancel button), or overwrite a stranger's
+  `subscriptions` row via the webhook (it upserts on `user_id`). Both endpoints now verify the
+  `Authorization: Bearer <token>` header against Supabase's auth server (`api/_auth.ts`) and use only
+  the identity that comes back — never anything in the body. Covered by `test/api-auth.test.ts` and
+  `test/create-portal-session.test.ts`.
+- **RLS is default-deny.** `admin_emails` has row-level security enabled with zero policies, which
+  means nobody can read or write it through the API at all — not even a logged-in user. The one path
+  in is the `analytics_summary()` function, which runs as the table owner and checks the caller's
+  email itself before returning anything.
+- **The service role key never reaches the browser.** It is read only in `/api` functions
+  (`SUPABASE_SERVICE_ROLE_KEY`, no `VITE_` prefix), which Vite never bundles into client code.
+- **Webhook signatures are verified before anything is trusted.** `stripe-webhook.ts` rejects any
+  request that doesn't verify against `STRIPE_WEBHOOK_SECRET_*` before reading the event body.
+- **Anonymous inserts on `analytics_events` are open by necessity** (landing views happen before
+  sign-in) and could be spammed. Add a rate limit or move the write behind an edge function if the
+  numbers stop looking believable.
+- **Manual step:** Supabase's leaked-password check (rejects passwords found in known breaches) is off
+  by default. Turn it on in the dashboard: Authentication → Policies → Password Security. Not
+  something available through the API used here.
+
 ## Launch checklist
 
 Before pointing traffic at this:
@@ -234,8 +261,8 @@ Before pointing traffic at this:
 ## Analytics
 
 An admin-only dashboard lives behind the **Analytics** link in the account row, visible to emails in
-`VITE_ADMIN_EMAILS`. It shows the landing → CTA → signup → checkout → trial funnel, visitors per day,
-traffic sources, and how many accounts are trialing, paying, or cancelling.
+`VITE_ANALYTICS_EMAILS`. It shows the landing → CTA → signup → checkout → trial funnel, visitors per
+day, traffic sources, and how many accounts are trialing, paying, or cancelling.
 
 | Piece | File |
 |---|---|
@@ -246,10 +273,14 @@ traffic sources, and how many accounts are trialing, paying, or cancelling.
 
 Two things worth knowing:
 
+- **`VITE_ANALYTICS_EMAILS` is deliberately separate from `VITE_ADMIN_EMAILS`.** The admin list only
+  skips the paywall; it says nothing about who should see revenue and traffic numbers. Conflating the
+  two would show your analytics to anyone ever given a free account for an unrelated reason. Unset,
+  nobody sees the link — it fails closed rather than falling back to the admin list.
 - **Authorisation is enforced in Postgres, not the UI.** `analytics_summary()` raises unless the
-  caller's email is in the `admin_emails` table. Hiding the link via `VITE_ADMIN_EMAILS` is
-  convenience only — an email in the env var but not in the table sees a "not authorized" state, so
-  set both.
+  caller's email is in the `admin_emails` table — currently just `winston6800@gmail.com`. Hiding the
+  link via `VITE_ANALYTICS_EMAILS` is convenience only; an email in the env var but not in that table
+  sees a "not authorized" state, so keep both in sync.
 - **Anonymous inserts are open by necessity.** Landing views happen before sign-in, so the events
   table accepts unauthenticated writes and could be spammed. Fine for a launch; add a rate limit or
   move the write behind an edge function if the numbers stop looking believable.
