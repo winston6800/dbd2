@@ -15,7 +15,9 @@ Access is granted while the subscription status is `trialing` or `active`. Cance
 `cancel_at_period_end` and access continues until the period ends — the user keeps what they paid
 for.
 
-Emails listed in `VITE_ADMIN_EMAILS` skip the second gate entirely.
+Emails listed in `VITE_ADMIN_EMAILS` skip the second gate entirely. A separate list,
+`VITE_ANALYTICS_EMAILS`, controls who sees the Analytics link — the two are intentionally not the
+same list, since skipping the paywall and seeing business data are different privileges.
 
 Signed-in users get an account row above the board: a trial countdown while trialing, a "cancels at
 period end" marker after cancelling, their email, **Analytics** (admins only), **Manage subscription**

@@ -15,13 +15,21 @@ const linkStyle: React.CSSProperties = {
 };
 
 /**
- * Whether to offer the analytics link. This only hides the UI — the summary
- * itself is gated in Postgres against the `admin_emails` table, so an email
- * listed here but not there will see the dashboard's "not authorized" state.
+ * Whether to offer the analytics link. This is a separate list from
+ * `VITE_ADMIN_EMAILS` (which only skips the paywall) — seeing the paywall
+ * bypass and seeing aggregate business analytics are different privileges,
+ * and conflating them would show revenue and traffic data to anyone given a
+ * free account for an unrelated reason.
+ *
+ * This only hides the UI — the real boundary is in Postgres: `analytics_summary`
+ * checks the caller's email against the `admin_emails` table and raises if it
+ * is not there. An email listed here but not in that table sees the
+ * dashboard's "not authorized" state. Unset, this hides the link from
+ * everyone (fails closed) rather than falling back to some other list.
  */
-function isAdmin(email: string | undefined): boolean {
+function canSeeAnalytics(email: string | undefined): boolean {
   if (!email) return false;
-  return (import.meta.env.VITE_ADMIN_EMAILS ?? '')
+  return (import.meta.env.VITE_ANALYTICS_EMAILS ?? '')
     .split(',')
     .map((e: string) => e.trim().toLowerCase())
     .filter(Boolean)
@@ -37,7 +45,7 @@ function isAdmin(email: string | undefined): boolean {
  * cancelling happens.
  */
 export const AccountBar: React.FC<{ onOpenAnalytics?: () => void }> = ({ onOpenAnalytics }) => {
-  const { user, subscription, signOut } = useAuth();
+  const { user, session, subscription, signOut } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,10 +53,11 @@ export const AccountBar: React.FC<{ onOpenAnalytics?: () => void }> = ({ onOpenA
     setBusy(true);
     setError(null);
     try {
+      // The server derives the account from this token — sending a userId
+      // here would let anyone request another account's billing portal link.
       const res = await fetch('/api/create-portal-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user!.id }),
+        headers: { Authorization: `Bearer ${session?.access_token}` },
       });
       if (!res.ok) throw new Error('Could not open the billing portal');
       const { url } = await res.json();
@@ -87,7 +96,7 @@ export const AccountBar: React.FC<{ onOpenAnalytics?: () => void }> = ({ onOpenA
 
       <span>{user?.email}</span>
 
-      {onOpenAnalytics && isAdmin(user?.email) && (
+      {onOpenAnalytics && canSeeAnalytics(user?.email) && (
         <button type="button" onClick={onOpenAnalytics} style={linkStyle}>
           Analytics
         </button>
