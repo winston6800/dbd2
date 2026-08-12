@@ -69,6 +69,46 @@ button:focus-visible,
     border-left: none !important;
     border-top: 1px solid #232c3a;
   }
+
+  /* The five-agent legend wraps to four rows at this width and shoves the plot
+     name off the bar. The accent colours are still explained in the panel. */
+  .fr-legend {
+    display: none !important;
+  }
+
+  /* Same physics as the landing demo: the whole net has to fit ~390px, which
+     puts labels near 4px. Navigation on mobile is the frontier rail and the
+     panel header, both of which name the node in readable text. */
+  .fr-main text {
+    display: none;
+  }
+
+  /* Unwind the fixed two-pane layout. On desktop the shell is exactly one
+     viewport and each region scrolls internally; at this size those regions
+     are too short to hold anything, and the composer gets pushed off the
+     bottom entirely. Below the breakpoint the page scrolls as one column. */
+  .fr-shell {
+    height: auto !important;
+    min-height: 100dvh;
+  }
+
+  .fr-main {
+    grid-template-rows: 42dvh auto;
+  }
+
+  .fr-panel {
+    height: auto !important;
+  }
+
+  .fr-transcript {
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  .fr-forks {
+    max-height: none !important;
+    overflow: visible !important;
+  }
 }
 
 /* Landing */
@@ -93,5 +133,26 @@ button:focus-visible,
 
   .fr-landing-beats {
     grid-template-columns: 1fr;
+  }
+}
+
+/* The landing demo renders the real NetCanvas, whose viewBox floor is 900x620.
+   An SVG fits on its tighter axis, so a short container shrinks the labels to
+   unreadable — this holds the box near that 1.45 aspect at any width. */
+.fr-demo {
+  width: 100%;
+  height: 560px;
+}
+
+@media (max-width: 760px) {
+  .fr-demo {
+    height: 300px;
+  }
+
+  /* At phone widths the whole net has to fit ~350px, which scales 11px labels
+     down to about 4px — worse than no labels. The graph still reads as a
+     constellation, and the caption under it carries the meaning. */
+  .fr-demo text {
+    display: none;
   }
 }

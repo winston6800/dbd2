@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { edgesOf, layoutNet, viewBoxFor } from './graph';
+import { MIN_VIEW, edgesOf, layoutNet, viewBoxFor } from './graph';
 import { setForks, startPlot, takeFork, collide, nodeById } from './ops';
 import type { ConvNode, NetState } from './types';
 
@@ -118,6 +118,29 @@ describe('viewBoxFor', () => {
     expect(h).toBeGreaterThan(layout.bounds.maxY - layout.bounds.minY);
     expect(x).toBeLessThanOrEqual(layout.bounds.minX);
     expect(y).toBeLessThanOrEqual(layout.bounds.minY);
+  });
+
+  it('never drops below the floor, so a small net is not magnified', () => {
+    // Everything in the SVG is in user units, so an under-sized viewBox scales
+    // 11-unit labels up to ~33px and collides them. Two nodes is the worst case.
+    const state = startPlot('tiny', 'A premise long enough to be real.');
+    const grown = grow(state, state.nodes[0].id, 'One child');
+    const [, , w, h] = viewBoxFor(layoutNet(grown.nodes)).split(' ').map(Number);
+
+    expect(w).toBeGreaterThanOrEqual(MIN_VIEW.w);
+    expect(h).toBeGreaterThanOrEqual(MIN_VIEW.h);
+  });
+
+  it('centres the floored box on the graph, not its corner', () => {
+    const state = startPlot('tiny', 'A premise long enough to be real.');
+    const layout = layoutNet(grow(state, state.nodes[0].id, 'x').nodes);
+    const [x, y, w, h] = viewBoxFor(layout).split(' ').map(Number);
+
+    const graphCx = (layout.bounds.minX + layout.bounds.maxX) / 2;
+    const graphCy = (layout.bounds.minY + layout.bounds.maxY) / 2;
+
+    expect(x + w / 2).toBeCloseTo(graphCx);
+    expect(y + h / 2).toBeCloseTo(graphCy);
   });
 
   it('falls back to a sane box for an empty net', () => {

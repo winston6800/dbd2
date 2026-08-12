@@ -35,15 +35,21 @@ export interface NetLayout {
   bounds: { minX: number; minY: number; maxX: number; maxY: number };
 }
 
+/**
+ * Distances are tuned against MIN_VIEW below, not chosen in the abstract: the
+ * spread has to fill that frame or a small net renders as a cluster marooned in
+ * an empty canvas. Repulsion goes as 1/d², so it is quadrupled alongside the
+ * doubled spring lengths to keep the equilibrium spacing proportional.
+ */
 const ITERATIONS = 320;
-const REPULSION = 5200;
+const REPULSION = 21_000;
 const CENTER_PULL = 0.0055;
 const DAMPING = 0.82;
-const RING = 135;
+const RING = 250;
 
 const SPRING = {
-  parent: { length: 128, k: 0.045 },
-  link: { length: 205, k: 0.011 },
+  parent: { length: 235, k: 0.045 },
+  link: { length: 340, k: 0.011 },
 } as const;
 
 /** Deterministic 32-bit string hash — stands in for the RNG a seed would need. */
@@ -79,8 +85,8 @@ export function edgesOf(nodes: ConvNode[]): GraphEdge[] {
 }
 
 function radiusOf(node: ConvNode, heat: number): number {
-  const body = Math.min(11, node.messages.length * 1.6);
-  return 15 + body + heat * 7;
+  const body = Math.min(13, node.messages.length * 1.7);
+  return 20 + body + heat * 8;
 }
 
 /**
@@ -103,7 +109,7 @@ export function layoutNet(nodes: ConvNode[]): NetLayout {
     const angle = (hash(node.id) % 3600) / 3600 * Math.PI * 2;
     // Jitter keeps two same-depth nodes from landing on the same point, where
     // the repulsion term would divide by zero.
-    const radius = depth * RING + (hash(node.id + '~r') % 40) - 20;
+    const radius = depth * RING + (hash(node.id + '~r') % 70) - 35;
     pos.set(node.id, {
       x: Math.cos(angle) * radius,
       y: Math.sin(angle) * radius,
@@ -208,14 +214,33 @@ export function layoutNet(nodes: ConvNode[]): NetLayout {
 }
 
 /**
+ * The smallest viewBox the canvas will use.
+ *
+ * Everything in the SVG — node radii, label text — is measured in user units,
+ * so the browser's fit-to-container scaling applies to all of it equally. A
+ * three-node net occupies ~400 units, which a 1200px canvas then blows up 3x,
+ * rendering 11-unit labels at 33px and colliding them with each other. Holding
+ * a floor on the viewBox caps that scale, so a small net sits in open space
+ * instead of being magnified. Large nets exceed the floor and shrink to fit,
+ * which is the expected behaviour of framing the whole graph.
+ */
+export const MIN_VIEW = { w: 900, h: 620 };
+
+/**
  * viewBox that frames the whole net with padding, for an SVG that scales to
- * whatever space the canvas has.
+ * whatever space the canvas has. Grown to the floor above around the graph's
+ * own centre, so the net stays centred rather than drifting to a corner.
  */
 export function viewBoxFor(layout: NetLayout, pad = 70): string {
   const { minX, minY, maxX, maxY } = layout.bounds;
-  if (!isFinite(minX)) return '-300 -200 600 400';
+  if (!isFinite(minX)) return `${-MIN_VIEW.w / 2} ${-MIN_VIEW.h / 2} ${MIN_VIEW.w} ${MIN_VIEW.h}`;
 
-  const w = Math.max(320, maxX - minX + pad * 2);
-  const h = Math.max(240, maxY - minY + pad * 2);
-  return `${minX - pad} ${minY - pad} ${w} ${h}`;
+  const w = Math.max(MIN_VIEW.w, maxX - minX + pad * 2);
+  const h = Math.max(MIN_VIEW.h, maxY - minY + pad * 2);
+
+  // Centre the (possibly larger) box on the graph rather than on its top-left.
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+
+  return `${cx - w / 2} ${cy - h / 2} ${w} ${h}`;
 }

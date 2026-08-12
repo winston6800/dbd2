@@ -57,7 +57,7 @@ export const ConversationPanel: React.FC<Props> = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
+    <div className="fr-panel" style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
       {/* Header: who you are talking to, and what this node is for. */}
       <div style={{ padding: '14px 16px', borderBottom: `1px solid ${C.border}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -93,7 +93,12 @@ export const ConversationPanel: React.FC<Props> = ({
       </div>
 
       {/* Transcript */}
-      <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '14px 16px' }}>
+      {/* minHeight over minHeight:0 on purpose. On a short viewport the pinned
+          header, the forks block and the composer between them can leave the
+          transcript a few pixels tall, hiding the agent's answer entirely —
+          the one thing the panel exists to show. This floors it and lets the
+          forks block scroll internally instead. */}
+      <div ref={scrollRef} className="fr-transcript" style={{ flex: 1, minHeight: 130, overflowY: 'auto', padding: '14px 16px' }}>
         {node.messages.length === 0 && !busy && (
           <div style={{ color: C.meta, fontSize: 13, lineHeight: 1.6 }}>
             {agent.tagline}
@@ -127,7 +132,7 @@ export const ConversationPanel: React.FC<Props> = ({
 
       {/* Forks — the primary action. */}
       {openForks.length > 0 && (
-        <div style={{ borderTop: `1px solid ${C.border}`, padding: '12px 16px', maxHeight: '38%', overflowY: 'auto' }}>
+        <div className="fr-forks" style={{ borderTop: `1px solid ${C.border}`, padding: '12px 16px', maxHeight: '34%', overflowY: 'auto', flex: 'none' }}>
           <div style={{ fontFamily: MONO_FONT, fontSize: 10, letterSpacing: '0.1em', color: C.meta, marginBottom: 8 }}>
             FORKS — TAKE ONE TO GROW THE NET
           </div>

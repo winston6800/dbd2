@@ -3,3 +3,9 @@
 **/*.test.ts
 **/*.test.tsx
 test/
+
+# Dev-only visual harness. It renders the shell with a hand-written net so the
+# canvas can be looked at without a Supabase session; it is not part of the app
+# and vite never builds it (index.html is the only entry).
+preview.html
+preview.tsx

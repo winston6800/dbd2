@@ -148,7 +148,7 @@ export const NetCanvas: React.FC<Props> = ({ nodes, activeId, collideWith, onSel
 
 /** Legend for the roster, so the accent colours mean something on first sight. */
 export const AgentLegend: React.FC = () => (
-  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 10, fontFamily: MONO_FONT, color: C.meta }}>
+  <div className="fr-legend" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 10, fontFamily: MONO_FONT, color: C.meta }}>
     {['cartographer', 'adversary', 'synthesist', 'artificer', 'historian'].map(role => {
       const agent = agentOf(role as never);
       return (

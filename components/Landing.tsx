@@ -125,7 +125,7 @@ export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = 
 
         {/* The real canvas, running */}
         <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-          <div style={{ height: 400, width: '100%' }}>
+          <div className="fr-demo">
             <NetCanvas nodes={demo} activeId="n5" onSelect={() => undefined} />
           </div>
           <div

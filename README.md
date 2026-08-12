@@ -75,6 +75,12 @@ agents return 500 and the net cannot grow.
 Apply `supabase/migrations/006_nets.sql` to create the `nets` table (one JSON row per user, RLS
 scoped to the owner).
 
+### Looking at the UI without a session
+
+`npm run dev`, then open **/preview.html**. It mounts the real shell, canvas and conversation panel
+against a hand-written net, so the graph can be inspected without Supabase, a subscription, or an
+Anthropic key. It is never built or deployed — `index.html` is vite's only entry.
+
 ## Legacy: Monster Goals
 
 This repo previously shipped **Monster Goals**, a goal tracker shaped like a boss fight. Its code

@@ -159,7 +159,7 @@ export const FrontierApp: React.FC = () => {
   if (!state?.plot) return <PlotSetup onStart={beginPlot} />;
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', ...VOID_BACKGROUND, color: C.text }}>
+    <div className="fr-shell" style={{ height: '100dvh', display: 'flex', flexDirection: 'column', ...VOID_BACKGROUND, color: C.text }}>
       {/* Top bar */}
       <div
         style={{
