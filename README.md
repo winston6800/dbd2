@@ -1,20 +1,93 @@
-# Monster Goals
+# Frontier
 
-A goal-tracking app reframed as a boss fight. Name one big goal (the "monster"), break it into
-mini-bosses (sub-goals), and add tasks under the active mini-boss. Checking off a task deploys a
-"Milk" unit into orbit around the active boss, where it fires pellets forever. Each completed task
-takes 12 HP off the boss. At 0 HP the boss plays a defeat animation, drops into a faded graveyard
-trail, and the next sub-goal becomes active.
+A thinking net for the thing you are trying to make that does not exist yet.
 
-Access is gated: users must sign in **and** hold a subscription before they see the board. New users
+Chat is the wrong shape for invention. Real thinking branches, collides and dead-ends, but a chat app
+gives you hundreds of orphaned transcripts with no structure between them. Frontier makes the
+structure the primary object: an Obsidian-style graph where every node is one conversation with one
+agent, wired into a **plot** — a single sentence naming the thing that does not exist yet.
+
+The loop:
+
+1. **Declare a plot.** One sentence. Not a goal — a thing.
+2. **The root opens.** The Cartographer separates what is already shipping from what is genuinely
+   unexplored, and names the sliver that is actually new.
+3. **Take a fork.** Every agent ends its turn proposing 2–4 genuinely divergent directions. Taking
+   one grows a new node wired to its parent.
+4. **The net grows outward.** Unexplored leaves glow; that glow is the frontier.
+5. **Collide distant branches.** The Synthesist takes two nodes from opposite sides of the net and
+   forces a structural connection. This is the feature that justifies the graph existing at all.
+
+Access is gated: users must sign in **and** hold a subscription before any agent turn runs. New users
 get a **3-day free trial**; a card is taken up front and charged $20/month when the trial ends unless
 they cancel first.
+
+## The roster
+
+Five agents, not one assistant. A single general-purpose assistant converges on the median of what
+has been written on a subject, which is the opposite of a frontier — so each agent gets one job, one
+refusal, and a bias toward pushing outward.
+
+| Agent | Job |
+|---|---|
+| **Cartographer** | Separates solved from known-unsolved from unexplored, and names the real unknown. |
+| **Adversary** | Attacks the single load-bearing assumption, and names a test that settles it this week. |
+| **Synthesist** | Collides two distant nodes and states what falls out that neither could reach alone. |
+| **Artificer** | Converts the thread into the smallest artifact that teaches something unpredictable. |
+| **Historian** | Names specific prior attempts, what killed them, and which input has actually changed since. |
+
+Prompts live in `lib/net/agents.ts`. They are the product, not scaffolding — the shared preamble is
+what stops all five collapsing back into "helpful assistant" under pressure.
+
+## Architecture
+
+| Path | Role |
+|---|---|
+| `lib/net/types.ts` | `Plot`, `ConvNode`, `Fork`, `Message`, `NetState`. |
+| `lib/net/agents.ts` | The roster, context assembly, and the tolerant `FORKS` parser. |
+| `lib/net/ops.ts` | Every mutation of the net as a pure function (fork, collide, delete, resolve). |
+| `lib/net/frontier.ts` | Heat scoring, ancestor/descendant walks, collision candidate ranking. |
+| `lib/net/graph.ts` | Deterministic force-directed layout. |
+| `lib/net/sync.ts` | localStorage cache + Supabase `nets` table. |
+| `api/agent-turn.ts` | The **only** path to the model. Holds the key, enforces entitlement. |
+| `components/Frontier/` | Canvas, conversation panel, plot setup, app shell. |
+
+Two properties are load-bearing and are asserted in tests:
+
+- **Layout is deterministic.** A force layout seeded with `Math.random` re-arranges itself on every
+  mount, destroying the one thing a spatial view is for — you remembering where things are. Same net
+  in, same picture out.
+- **The paywall is server-side.** The client gate is a UX affordance. `api/agent-turn.ts` verifies the
+  session token and re-checks the subscription before spending a token, because the Supabase anon key
+  is public and the alternative is an unmetered inference farm on your card.
+
+## Setup beyond Supabase
+
+Frontier needs one extra secret over the old board:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Server-side only — it is read by `api/agent-turn.ts` and never reaches the bundle. Without it the
+agents return 500 and the net cannot grow.
+
+Apply `supabase/migrations/006_nets.sql` to create the `nets` table (one JSON row per user, RLS
+scoped to the owner).
+
+## Legacy: Monster Goals
+
+This repo previously shipped **Monster Goals**, a goal tracker shaped like a boss fight. Its code
+still lives under `components/MonsterGoals/` and `lib/monster/`, and `supabase/migrations/002_goals.sql`
+is deliberately left in place rather than dropped — no data is migrated between the two, and the old
+`goals` rows are untouched. Sections below marked *Game code* describe that app. The auth, billing,
+webhook, and analytics layers are shared and current.
 
 ## Quick start
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in your Supabase values
+cp .env.example .env         # fill in Supabase + ANTHROPIC_API_KEY
 npm run dev
 ```
 

@@ -23,7 +23,12 @@ export type AnalyticsEvent =
   | 'task_added'
   | 'task_completed'
   | 'boss_defeated'
-  | 'goal_completed';
+  | 'goal_completed'
+  // Frontier. The board events above are kept so the historical rows already
+  // in analytics_events still typecheck against this union.
+  | 'plot_created'
+  | 'fork_taken'
+  | 'collision_opened';
 
 const SESSION_KEY = 'monsterGoalsSession';
 const ATTRIBUTION_KEY = 'monsterGoalsAttribution';
