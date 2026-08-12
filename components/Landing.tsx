@@ -203,6 +203,9 @@ export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = 
       <div style={{ textAlign: 'center', fontSize: 12, color: COLORS.metaText }}>
         Built for people whose to-do lists have stopped working on them.
       </div>
+      <div style={{ textAlign: 'center', fontSize: 12, color: COLORS.metaText }}>
+        If your dream is working at Amazon, Google, Microsoft, or OpenAI for the money — go fuck yourself, and GTFO.
+      </div>
     </div>
   </div>
 );
