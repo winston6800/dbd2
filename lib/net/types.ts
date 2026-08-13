@@ -17,9 +17,16 @@
  */
 export type AgentRole = 'cartographer' | 'adversary' | 'synthesist' | 'artificer' | 'historian';
 
+/**
+ * `probe` is a real executed result, not something anybody said. It is kept
+ * distinct from `user` so the transcript can render it as evidence and the
+ * agent can be told plainly that it is measured output rather than an opinion.
+ */
+export type MessageRole = 'user' | 'agent' | 'probe';
+
 export interface Message {
   id: string;
-  role: 'user' | 'agent';
+  role: MessageRole;
   text: string;
   /** ISO timestamp. */
   at: string;

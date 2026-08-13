@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import './styles/frontier.css';
 import { NetCanvas, AgentLegend } from './components/Frontier/NetCanvas';
 import { ConversationPanel } from './components/Frontier/ConversationPanel';
 import { ancestorsOf, scoreNet } from './lib/net/frontier';
 import { addMessage, collide, nodeById, setForks, startPlot, takeFork } from './lib/net/ops';
+import { formatResult, runProbe } from './lib/net/probe';
 import type { NetState } from './lib/net/types';
 import { C, MONO_FONT, VOID_BACKGROUND } from './lib/net/tokens';
 
@@ -90,14 +91,42 @@ function demo(): NetState {
     { title: 'Build the history table', premise: 'A 200-line probe over one MoE layer settles the accuracy question.', agent: 'artificer' },
   ]);
 
-  return { ...s, activeId: synth };
+  // A runnable Artificer node — this is what closes the loop: click Run, the
+  // sandbox executes the block, and the result comes back as a probe message.
+  s = grow(s, sched, 'Build the history table', 'artificer');
+  const probe = s.activeId!;
+  s = addMessage(s, probe, 'user', 'A 200-line probe over one MoE layer settles the accuracy question.');
+  s = addMessage(
+    s,
+    probe,
+    'agent',
+    "Smallest thing that teaches you something: simulate a history table against a synthetic router trace and read the hit rate. If it clears 70% at depth 1, speculation is worth building; if it does not, the whole synthesis collapses and you have spent an afternoon, not a quarter.\n\n```js\nfunction xorshift(seed) {\n  let x = seed;\n  return () => {\n    x ^= x << 13; x ^= x >>> 17; x ^= x << 5;\n    return ((x >>> 0) / 4294967296);\n  };\n}\n\nconst rand = xorshift(42);\nconst EXPERTS = 8;\nconst STEPS = 20000;\nconst history = new Map();\nlet hits = 0;\nlet prev = 0;\n\nfor (let i = 0; i < STEPS; i++) {\n  // Synthetic router: mostly sticky, occasionally jumps — stands in for the\n  // real logits until we have a checkpoint to trace.\n  const next = rand() < 0.72 ? prev : Math.floor(rand() * EXPERTS);\n  const predicted = history.get(prev);\n  if (predicted === next) hits++;\n  history.set(prev, next);\n  prev = next;\n}\n\nconst hitRate = hits / STEPS;\nconsole.log('depth-1 hit rate:', hitRate.toFixed(3));\nreturn hitRate;\n```\n\nThat number is the one the Adversary should be attacking next, not the premise.",
+  );
+  s = setForks(s, probe, [
+    { title: 'Attack the measured rate', premise: 'Is 70% actually the bar, or did I just pick a number?', agent: 'adversary' },
+  ]);
+
+  return { ...s, activeId: probe };
 }
 
-const state = demo();
-const active = nodeById(state, state.activeId)!;
-const scores = scoreNet(state.nodes);
+const App = () => {
+  // Local state so the harness can actually exercise the live loop: click Run,
+  // the real Worker sandbox executes the block in this real browser tab, and
+  // the result comes back as a message. This is the part most worth eyeballing
+  // directly, since vitest's jsdom environment has no real Worker to run it in.
+  const [state, setState] = useState(demo());
+  const [runningId, setRunningId] = useState<string | null>(null);
+  const active = nodeById(state, state.activeId)!;
+  const scores = scoreNet(state.nodes);
 
-const App = () => (
+  const onRunProbe = async (messageId: string, code: string) => {
+    setRunningId(messageId);
+    const result = await runProbe(code);
+    setState(s => addMessage(s, s.activeId!, 'probe', formatResult(result)));
+    setRunningId(null);
+  };
+
+  return (
   <div className="fr-shell" style={{ height: '100dvh', display: 'flex', flexDirection: 'column', ...VOID_BACKGROUND, color: C.text }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 16px', borderBottom: `1px solid ${C.border}`, background: C.surface }}>
       <span style={{ fontFamily: MONO_FONT, fontSize: 11, letterSpacing: '0.16em', color: C.meta }}>FRONTIER</span>
@@ -134,15 +163,18 @@ const App = () => (
           ancestors={ancestorsOf(state.nodes, active.id)}
           busy={false}
           error={null}
+          runningMessageId={runningId}
           onSend={() => undefined}
           onTakeFork={() => undefined}
           onToggleResolved={() => undefined}
           onStartCollide={() => undefined}
           onJump={() => undefined}
+          onRunProbe={(id, code) => void onRunProbe(id, code)}
         />
       </div>
     </div>
   </div>
-);
+  );
+};
 
 ReactDOM.createRoot(document.getElementById('root')!).render(<App />);

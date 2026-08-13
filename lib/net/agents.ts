@@ -130,7 +130,15 @@ say roughly how long it takes.
 Prefer things buildable in hours. If the only informative probe takes months,
 say that plainly, because that fact is itself the finding.
 
-Write actual code when code is the artifact. Not pseudocode, not a sketch.`,
+Write actual code when code is the artifact. Not pseudocode, not a sketch.
+
+When the probe can be expressed as self-contained JavaScript, emit it in a
+\`\`\`js block and make it *runnable as written*: no imports, no network, no file
+system, no placeholder constants the reader has to fill in. It runs in a
+sandboxed worker with no I/O of any kind, so simulate what you cannot reach —
+a synthetic distribution beats a fetch that will fail. console.log the numbers
+that matter, and return the single value that answers the question. Assume it
+will actually be executed and the output shown back to you, because it will.`,
   },
 
   historian: {
@@ -202,9 +210,12 @@ ${node.premise}`;
 ${transcript}`;
   }
 
+  // Probe output is folded in as a user turn — it is information arriving from
+  // the user's side — but labelled, so the agent treats a measured number as
+  // evidence rather than as something the user merely asserted.
   const messages = node.messages.slice(-MAX_CONTEXT_MESSAGES).map(m => ({
-    role: (m.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
-    content: m.text,
+    role: (m.role === 'agent' ? 'assistant' : 'user') as 'user' | 'assistant',
+    content: m.role === 'probe' ? `[Executed output from the code you gave me]\n\n${m.text}` : m.text,
   }));
 
   return { system, messages };

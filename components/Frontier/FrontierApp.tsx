@@ -13,6 +13,7 @@ import {
   takeFork,
 } from '../../lib/net/ops';
 import { AgentError, runTurn } from '../../lib/net/agentClient';
+import { formatResult, runProbe } from '../../lib/net/probe';
 import { agentOf } from '../../lib/net/agents';
 import { createNetSaver, loadNetFor } from '../../lib/net/sync';
 import { C, MONO_FONT, VOID_BACKGROUND, heatColor } from '../../lib/net/tokens';
@@ -36,6 +37,7 @@ export const FrontierApp: React.FC = () => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [collideFrom, setCollideFrom] = useState<string | null>(null);
+  const [runningMessageId, setRunningMessageId] = useState<string | null>(null);
 
   const stateRef = useRef<NetState | null>(null);
   const saverRef = useRef<ReturnType<typeof createNetSaver> | null>(null);
@@ -124,6 +126,25 @@ export const FrontierApp: React.FC = () => {
     if (!snapshot?.activeId) return;
     commit(addMessage(snapshot, snapshot.activeId, 'user', text));
     void doTurn(snapshot.activeId);
+  }, [commit, doTurn]);
+
+  /**
+   * Runs the Artificer's code and feeds the result back in as a probe message,
+   * then immediately opens a new agent turn against it. Closing that loop live
+   * — rather than waiting for the user to type something — is the point: the
+   * next reply argues against a measured number instead of an assumption.
+   */
+  const runAndReport = useCallback(async (nodeId: string, messageId: string, code: string) => {
+    setRunningMessageId(messageId);
+    try {
+      const result = await runProbe(code);
+      const snapshot = stateRef.current;
+      if (!snapshot) return;
+      commit(addMessage(snapshot, nodeId, 'probe', formatResult(result)));
+      void doTurn(nodeId);
+    } finally {
+      setRunningMessageId(null);
+    }
   }, [commit, doTurn]);
 
   const onTakeFork = useCallback((forkId: string) => {
@@ -291,11 +312,13 @@ export const FrontierApp: React.FC = () => {
               ancestors={ancestorsOf(state.nodes, active.id)}
               busy={busy}
               error={error}
+              runningMessageId={runningMessageId}
               onSend={send}
               onTakeFork={onTakeFork}
               onToggleResolved={() => commit(setResolved(stateRef.current!, active.id, !active.resolved))}
               onStartCollide={() => setCollideFrom(active.id)}
               onJump={id => commit(setActive(stateRef.current!, id))}
+              onRunProbe={(messageId, code) => void runAndReport(active.id, messageId, code)}
             />
           ) : (
             <div style={{ padding: 20, color: C.meta, fontSize: 13 }}>Pick a node to open it.</div>

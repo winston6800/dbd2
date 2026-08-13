@@ -3,6 +3,7 @@ import type { ConvNode } from '../../lib/net/types';
 import { agentOf } from '../../lib/net/agents';
 import { C, MONO_FONT, heatColor } from '../../lib/net/tokens';
 import type { FrontierScore } from '../../lib/net/frontier';
+import { MessageBody } from './MessageBody';
 
 /**
  * The open conversation.
@@ -19,11 +20,14 @@ interface Props {
   ancestors: ConvNode[];
   busy: boolean;
   error: string | null;
+  /** Id of the message currently executing, if any — disables its Run button only. */
+  runningMessageId: string | null;
   onSend: (text: string) => void;
   onTakeFork: (forkId: string) => void;
   onToggleResolved: () => void;
   onStartCollide: () => void;
   onJump: (nodeId: string) => void;
+  onRunProbe: (messageId: string, code: string) => void;
 }
 
 export const ConversationPanel: React.FC<Props> = ({
@@ -32,11 +36,13 @@ export const ConversationPanel: React.FC<Props> = ({
   ancestors,
   busy,
   error,
+  runningMessageId,
   onSend,
   onTakeFork,
   onToggleResolved,
   onStartCollide,
   onJump,
+  onRunProbe,
 }) => {
   const [draft, setDraft] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -106,16 +112,49 @@ export const ConversationPanel: React.FC<Props> = ({
           </div>
         )}
 
-        {node.messages.map(message => (
-          <div key={message.id} style={{ marginBottom: 16 }}>
-            <div style={{ fontFamily: MONO_FONT, fontSize: 10, letterSpacing: '0.08em', color: message.role === 'user' ? C.meta : agent.accent, marginBottom: 5 }}>
-              {message.role === 'user' ? 'YOU' : agent.name.toUpperCase()}
+        {node.messages.map(message => {
+          if (message.role === 'probe') {
+            return (
+              <div key={message.id} style={{ marginBottom: 16 }}>
+                <div style={{ fontFamily: MONO_FONT, fontSize: 10, letterSpacing: '0.08em', color: '#5eead4', marginBottom: 5 }}>
+                  ▶ RAN
+                </div>
+                <pre
+                  style={{
+                    margin: 0,
+                    padding: '9px 11px',
+                    borderRadius: 8,
+                    border: '1px solid #5eead444',
+                    background: C.void,
+                    fontFamily: MONO_FONT,
+                    fontSize: 12,
+                    lineHeight: 1.55,
+                    color: C.text,
+                    whiteSpace: 'pre-wrap',
+                    overflowX: 'auto',
+                  }}
+                >
+                  {message.text}
+                </pre>
+              </div>
+            );
+          }
+
+          const label = message.role === 'user' ? 'YOU' : agent.name.toUpperCase();
+          const color = message.role === 'user' ? C.meta : agent.accent;
+
+          return (
+            <div key={message.id} style={{ marginBottom: 16 }}>
+              <div style={{ fontFamily: MONO_FONT, fontSize: 10, letterSpacing: '0.08em', color, marginBottom: 5 }}>{label}</div>
+              <MessageBody
+                text={message.text}
+                textColor={message.role === 'user' ? C.muted : C.text}
+                onRun={message.role === 'agent' ? code => onRunProbe(message.id, code) : undefined}
+                running={runningMessageId === message.id}
+              />
             </div>
-            <div style={{ fontSize: 13.5, lineHeight: 1.65, color: message.role === 'user' ? C.muted : C.text, whiteSpace: 'pre-wrap' }}>
-              {message.text}
-            </div>
-          </div>
-        ))}
+          );
+        })}
 
         {busy && (
           <div style={{ fontFamily: MONO_FONT, fontSize: 11, color: agent.accent, opacity: 0.85 }}>
