@@ -1,24 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import './styles/frontier.css';
+import './styles/books.css';
 import { AuthProvider, useAuth } from './lib/auth';
 import { AuthScreen } from './components/AuthScreen';
 import { SubscriptionGate } from './components/SubscriptionGate';
 import { Landing } from './components/Landing';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { FrontierApp } from './components/Frontier/FrontierApp';
-import { C, MONO_FONT, VOID_BACKGROUND } from './lib/net/tokens';
+import { BooksApp } from './components/Books/BooksApp';
+import { C, MONO_FONT, PAPER_BACKGROUND } from './lib/books/tokens';
 import { trackOnce } from './lib/monster/analytics';
 
 const Splash: React.FC<{ label: string }> = ({ label }) => (
   <div
     style={{
       minHeight: '100vh',
-      ...VOID_BACKGROUND,
+      ...PAPER_BACKGROUND,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      color: C.meta,
+      color: C.inkFaint,
       fontFamily: MONO_FONT,
       fontSize: 12,
     }}
@@ -28,9 +28,10 @@ const Splash: React.FC<{ label: string }> = ({ label }) => (
 );
 
 /**
- * Hard gate: sign in, then start a trial, then the net. No agent turn is
- * reachable without both — logged-out visitors get the landing page, which
- * explains the product and states the price before asking for an email.
+ * Hard gate: sign in, then start a trial, then the library. No summarize or
+ * image call is reachable without both — logged-out visitors get the landing
+ * page, which explains the product and states the price before asking for an
+ * email.
  */
 const AppGate: React.FC = () => {
   const { user, subscription, loading, subscriptionLoading, refreshSubscription } = useAuth();
@@ -52,7 +53,7 @@ const AppGate: React.FC = () => {
     if (subscription) trackOnce('trial_started');
   }, [subscription]);
 
-  if (loading) return <Splash label="Waking the agents…" />;
+  if (loading) return <Splash label="Opening your library…" />;
 
   if (!user) {
     return showAuth ? (
@@ -68,13 +69,13 @@ const AppGate: React.FC = () => {
     .filter(Boolean);
   const isAdmin = !!user.email && adminEmails.includes(user.email.toLowerCase());
 
-  if (isAdmin) return <FrontierApp />;
+  if (isAdmin) return <BooksApp />;
 
   if (subscriptionLoading) return <Splash label="Checking your access…" />;
 
   if (!subscription) return <SubscriptionGate />;
 
-  return <FrontierApp />;
+  return <BooksApp />;
 };
 
 const rootElement = document.getElementById('root');

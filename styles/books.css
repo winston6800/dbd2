@@ -1,0 +1,31 @@
+/* Chapters — warm, editorial. A reading surface, not a dashboard. */
+
+* {
+  box-sizing: border-box;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #faf6ef;
+  color: #1f1b16;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+::placeholder {
+  color: #948a76;
+}
+
+button:focus-visible {
+  outline: 2px solid #b5442e;
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .bk-sample-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

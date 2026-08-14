@@ -1,93 +1,79 @@
-# Frontier
+# Chapters
 
-A thinking net for the thing you are trying to make that does not exist yet.
+Every chapter of a book, in three paragraphs and one picture.
 
-Chat is the wrong shape for invention. Real thinking branches, collides and dead-ends, but a chat app
-gives you hundreds of orphaned transcripts with no structure between them. Frontier makes the
-structure the primary object: an Obsidian-style graph where every node is one conversation with one
-agent, wired into a **plot** — a single sentence naming the thing that does not exist yet.
+Drop in a PDF. Text extraction happens entirely in the browser (the file itself never reaches a
+server), the source is split into chapters, and each chapter is read for its actual argument — not
+skimmed for keywords — into an engaging summary plus a generated image for its central idea. A
+400-page book becomes a shelf of cards you can get through on a commute.
 
-The loop:
+Access is gated: users must sign in **and** hold a subscription before any summarize or image call
+runs. New users get a **3-day free trial**; a card is taken up front and charged $20/month when the
+trial ends unless they cancel first.
 
-1. **Declare a plot.** One sentence. Not a goal — a thing.
-2. **The root opens.** The Cartographer separates what is already shipping from what is genuinely
-   unexplored, and names the sliver that is actually new.
-3. **Take a fork.** Every agent ends its turn proposing 2–4 genuinely divergent directions. Taking
-   one grows a new node wired to its parent.
-4. **The net grows outward.** Unexplored leaves glow; that glow is the frontier.
-5. **Collide distant branches.** The Synthesist takes two nodes from opposite sides of the net and
-   forces a structural connection. This is the feature that justifies the graph existing at all.
+## The pipeline
 
-Access is gated: users must sign in **and** hold a subscription before any agent turn runs. New users
-get a **3-day free trial**; a card is taken up front and charged $20/month when the trial ends unless
-they cancel first.
+1. **Extract.** `lib/books/extractPdfText.ts` reads the PDF client-side with pdf.js — page breaks
+   become blank lines so chapter-heading detection has something to anchor on.
+2. **Segment.** `lib/books/segment.ts` splits the raw text into chapters, purely from the text: it
+   looks for heading lines with real spacing between them, and collapses a dense table of contents
+   down to (at most) its first entry rather than reading each line as a one-word chapter. Falls back
+   to fixed-size chunks when no reliable headings are found, so every book gets summarized.
+3. **Summarize.** Each chapter's text goes to `/api/agent-turn` with a prompt that asks for a real
+   title, a claim-first summary, and a concrete image prompt — as strict JSON, tolerantly parsed.
+4. **Illustrate.** The image prompt goes to `/api/chapter-image`, which holds the OpenAI key.
+5. **Read.** Chapters render as cards in a shelf; a finished one opens into a full reading view.
 
-## The roster
-
-Five agents, not one assistant. A single general-purpose assistant converges on the median of what
-has been written on a subject, which is the opposite of a frontier — so each agent gets one job, one
-refusal, and a bias toward pushing outward.
-
-| Agent | Job |
-|---|---|
-| **Cartographer** | Separates solved from known-unsolved from unexplored, and names the real unknown. |
-| **Adversary** | Attacks the single load-bearing assumption, and names a test that settles it this week. |
-| **Synthesist** | Collides two distant nodes and states what falls out that neither could reach alone. |
-| **Artificer** | Converts the thread into the smallest artifact that teaches something unpredictable. |
-| **Historian** | Names specific prior attempts, what killed them, and which input has actually changed since. |
-
-Prompts live in `lib/net/agents.ts`. They are the product, not scaffolding — the shared preamble is
-what stops all five collapsing back into "helpful assistant" under pressure.
+Chapters within a book run through steps 3–4 with bounded concurrency
+(`lib/shared/concurrency.ts`) — enough to not make a 20-chapter book take forever, not so much that
+two APIs get hit simultaneously and mostly trip rate limits.
 
 ## Architecture
 
 | Path | Role |
 |---|---|
-| `lib/net/types.ts` | `Plot`, `ConvNode`, `Fork`, `Message`, `NetState`. |
-| `lib/net/agents.ts` | The roster, context assembly, and the tolerant `FORKS` parser. |
-| `lib/net/ops.ts` | Every mutation of the net as a pure function (fork, collide, delete, resolve). |
-| `lib/net/frontier.ts` | Heat scoring, ancestor/descendant walks, collision candidate ranking. |
-| `lib/net/graph.ts` | Deterministic force-directed layout. |
-| `lib/net/sync.ts` | localStorage cache + Supabase `nets` table. |
-| `api/agent-turn.ts` | The **only** path to the model. Holds the key, enforces entitlement. |
-| `components/Frontier/` | Canvas, conversation panel, plot setup, app shell. |
+| `lib/books/types.ts` | `Book`, `Chapter`, `LibraryState`. |
+| `lib/books/segment.ts` | Pure, tested chapter-boundary detection — no model call. |
+| `lib/books/summarize.ts` | The summarization prompt and the tolerant JSON parser for its reply. |
+| `lib/books/ops.ts` | Every mutation of the library as a pure function. |
+| `lib/books/sync.ts` | localStorage cache + Supabase `libraries` table. |
+| `lib/shared/agentTurn.ts` / `lib/shared/http.ts` | Shared client for the two paid endpoints. |
+| `api/agent-turn.ts` | The **only** path to the text model. Holds the Anthropic key. |
+| `api/chapter-image.ts` | The **only** path to image generation. Holds the OpenAI key. |
+| `api/_entitlement.ts` | Shared subscription check both endpoints gate on. |
+| `components/Books/` | Upload screen, chapter card, chapter reader, app shell. |
 
-Two properties are load-bearing and are asserted in tests:
-
-- **Layout is deterministic.** A force layout seeded with `Math.random` re-arranges itself on every
-  mount, destroying the one thing a spatial view is for — you remembering where things are. Same net
-  in, same picture out.
-- **The paywall is server-side.** The client gate is a UX affordance. `api/agent-turn.ts` verifies the
-  session token and re-checks the subscription before spending a token, because the Supabase anon key
-  is public and the alternative is an unmetered inference farm on your card.
+**The paywall is server-side**, on both endpoints. The client gate is a UX affordance; each endpoint
+verifies the session token and re-checks the subscription before spending anything, because the
+Supabase anon key is public and the alternative is an unmetered bill on someone else's request.
 
 ## Setup beyond Supabase
 
-Frontier needs one extra secret over the old board:
+Two extra secrets over the old board:
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
 ```
 
-Server-side only — it is read by `api/agent-turn.ts` and never reaches the bundle. Without it the
-agents return 500 and the net cannot grow.
+Both server-side only, read by their respective `/api` functions and never bundled to the client.
+Without `ANTHROPIC_API_KEY`, summarization 500s. Without `OPENAI_API_KEY`, illustration 500s but
+summaries still complete — a chapter just stays without a picture.
 
-Apply `supabase/migrations/006_nets.sql` to create the `nets` table (one JSON row per user, RLS
-scoped to the owner).
+Apply `supabase/migrations/007_libraries.sql` to create the `libraries` table (one JSON row per user,
+RLS scoped to the owner). Chapter images are inline base64 data URIs for now — no storage bucket
+wired up yet — so illustrated libraries run larger than the old goals/nets rows; moving images to
+Supabase Storage is the natural next step if that becomes a problem.
 
-### Looking at the UI without a session
+## Legacy: Frontier and Monster Goals
 
-`npm run dev`, then open **/preview.html**. It mounts the real shell, canvas and conversation panel
-against a hand-written net, so the graph can be inspected without Supabase, a subscription, or an
-Anthropic key. It is never built or deployed — `index.html` is vite's only entry.
-
-## Legacy: Monster Goals
-
-This repo previously shipped **Monster Goals**, a goal tracker shaped like a boss fight. Its code
-still lives under `components/MonsterGoals/` and `lib/monster/`, and `supabase/migrations/002_goals.sql`
-is deliberately left in place rather than dropped — no data is migrated between the two, and the old
-`goals` rows are untouched. Sections below marked *Game code* describe that app. The auth, billing,
-webhook, and analytics layers are shared and current.
+This repo has shipped two previous products. **Frontier**, a graph-based thinking tool where each
+node was a conversation with one of five agents — its code lives under `components/Frontier/` and
+`lib/net/`, `supabase/migrations/006_nets.sql` is left in place, and `/preview.html` still mounts its
+UI standalone for inspection. **Monster Goals**, a goal tracker shaped like a boss fight — its code
+lives under `components/MonsterGoals/` and `lib/monster/`, with `002_goals.sql` likewise untouched. No
+data is migrated between any of the three, and old rows in `goals` / `nets` are left alone. The auth,
+billing, webhook, and analytics layers are shared across all three and current.
 
 ## Quick start
 

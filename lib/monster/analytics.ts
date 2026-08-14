@@ -28,7 +28,9 @@ export type AnalyticsEvent =
   // in analytics_events still typecheck against this union.
   | 'plot_created'
   | 'fork_taken'
-  | 'collision_opened';
+  | 'collision_opened'
+  // Chapters (the book summarizer).
+  | 'book_uploaded';
 
 const SESSION_KEY = 'monsterGoalsSession';
 const ATTRIBUTION_KEY = 'monsterGoalsAttribution';

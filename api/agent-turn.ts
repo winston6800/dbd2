@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
 import { getAuthenticatedUser } from './_auth.js';
+import { isEntitled } from './_entitlement.js';
 
 /**
  * Runs one agent turn.
@@ -19,9 +19,6 @@ import { getAuthenticatedUser } from './_auth.js';
 const MODEL = 'claude-opus-5';
 const MAX_TOKENS = 1600;
 
-/** Statuses that grant access. Mirrors ENTITLED in lib/supabase.ts. */
-const ENTITLED = ['trialing', 'active'];
-
 /** Ceilings that bound the cost of any single request. */
 const LIMITS = { system: 24_000, messages: 40, content: 12_000 };
 
@@ -33,28 +30,6 @@ interface TurnMessage {
 function isTurnMessage(value: unknown): value is TurnMessage {
   const m = value as TurnMessage;
   return !!m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string';
-}
-
-/**
- * Admins skip the paywall, matching the client gate. Everyone else needs a
- * subscription in an entitled status.
- */
-async function isEntitled(userId: string, email: string): Promise<boolean> {
-  const admins = (process.env.VITE_ADMIN_EMAILS ?? '')
-    .split(',')
-    .map(e => e.trim().toLowerCase())
-    .filter(Boolean);
-  if (admins.includes(email.toLowerCase())) return true;
-
-  const db = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-  const { data } = await db
-    .from('subscriptions')
-    .select('status')
-    .eq('user_id', userId)
-    .in('status', ENTITLED)
-    .maybeSingle();
-
-  return !!data;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
