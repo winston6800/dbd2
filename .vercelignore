@@ -9,3 +9,8 @@ test/
 # and vite never builds it (index.html is the only entry).
 preview.html
 preview.tsx
+
+# Dev-only visual harness for the book pipeline UI — see preview.html/tsx above
+# for the same pattern. Not built or deployed.
+preview-books.html
+preview-books.tsx
