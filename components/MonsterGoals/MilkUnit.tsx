@@ -83,7 +83,7 @@ export const MilkUnit: React.FC<MilkUnitProps> = ({
           top: '40%',
           width: 9,
           height: 5,
-          borderTop: `2px solid ${COLORS.ink}`,
+          borderTop: `2px solid ${COLORS.cartonInk}`,
           borderRadius: '8px 8px 0 0',
         }
       : {
@@ -93,7 +93,7 @@ export const MilkUnit: React.FC<MilkUnitProps> = ({
           width: v === 3 ? 9 : 7,
           height: v === 3 ? 9 : 7,
           borderRadius: '50%',
-          background: COLORS.ink,
+          background: COLORS.cartonInk,
         };
 
   const mouthStyle: CSSProperties =
@@ -106,7 +106,7 @@ export const MilkUnit: React.FC<MilkUnitProps> = ({
           width: 10,
           height: 10,
           borderRadius: '50%',
-          background: COLORS.ink,
+          background: COLORS.cartonInk,
         }
       : {
           position: 'absolute',
@@ -115,7 +115,7 @@ export const MilkUnit: React.FC<MilkUnitProps> = ({
           transform: 'translateX(-50%)',
           width: 16,
           height: 8,
-          border: `2px solid ${COLORS.ink}`,
+          border: `2px solid ${COLORS.cartonInk}`,
           borderTop: 'none',
           borderRadius: '0 0 12px 12px',
         };
@@ -131,7 +131,7 @@ export const MilkUnit: React.FC<MilkUnitProps> = ({
               margin: '0 auto',
               borderRadius: CARTON_RADIUS,
               background: bodyTint,
-              border: `2px solid ${COLORS.ink}`,
+              border: `2px solid ${COLORS.cartonInk}`,
               position: 'relative',
             }}
           >
@@ -143,7 +143,7 @@ export const MilkUnit: React.FC<MilkUnitProps> = ({
                 transform: 'translateX(-50%)',
                 width: '38%',
                 height: 10,
-                border: `2px solid ${COLORS.ink}`,
+                border: `2px solid ${COLORS.cartonInk}`,
                 borderBottom: 'none',
                 borderRadius: '4px 4px 0 0',
                 background: capTint,

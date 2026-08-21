@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth';
 import { track, trackOnce } from '../lib/monster/analytics';
-import { BLOB_RADIUS, COLORS, DISPLAY_FONT, PAPER_BACKGROUND } from '../lib/monster/tokens';
+import { ACTIVE_GLOW, BLOB_RADIUS, COLORS, DISPLAY_FONT, PAPER_BACKGROUND } from '../lib/monster/tokens';
 import { MonsterFace } from './MonsterGoals/MonsterFace';
 
 /**
@@ -102,7 +102,8 @@ export const SubscriptionGate: React.FC = () => {
             height: 110,
             borderRadius: BLOB_RADIUS,
             background: COLORS.surface,
-            border: `3px solid ${COLORS.ink}`,
+            border: `3px solid ${COLORS.monsterInk}`,
+            boxShadow: ACTIVE_GLOW,
             position: 'relative',
             animation: 'floatIdleNoX 3.5s ease-in-out infinite',
           }}
@@ -122,7 +123,7 @@ export const SubscriptionGate: React.FC = () => {
           style={{
             width: '100%',
             background: COLORS.surface,
-            border: `2px solid ${COLORS.ink}`,
+            border: `2px solid ${COLORS.cardBorder}`,
             borderRadius: 14,
             padding: '16px 18px',
             textAlign: 'left',
@@ -176,12 +177,12 @@ export const SubscriptionGate: React.FC = () => {
           <div
             style={{
               width: '100%',
-              background: '#f7e6e4',
-              border: '2px solid #a3564f',
+              background: COLORS.dangerFill,
+              border: `2px solid ${COLORS.danger}`,
               borderRadius: 10,
               padding: '10px 12px',
               fontSize: 13,
-              color: '#7c3f3a',
+              color: COLORS.dangerText,
               textAlign: 'left',
             }}
           >
@@ -194,7 +195,7 @@ export const SubscriptionGate: React.FC = () => {
           disabled={loading}
           style={{
             width: '100%',
-            background: COLORS.successGreen,
+            background: COLORS.ctaFill,
             border: `2px solid ${COLORS.ink}`,
             borderRadius: 10,
             padding: 14,

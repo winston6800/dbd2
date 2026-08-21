@@ -83,7 +83,7 @@ export const AccountBar: React.FC<{ onOpenAnalytics?: () => void }> = ({ onOpenA
         justifyContent: 'flex-end',
       }}
     >
-      {error && <span style={{ color: '#a3564f' }}>{error}</span>}
+      {error && <span style={{ color: COLORS.danger }}>{error}</span>}
 
       {isTrialing(subscription) && (
         <span style={{ fontWeight: 800, letterSpacing: '0.5px', color: COLORS.doneGlyph }}>

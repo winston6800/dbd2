@@ -8,8 +8,21 @@
 body {
   margin: 0;
   padding: 0;
-  background: #f3f0e8;
-  color: #2b2b2b;
+  background: #08070a;
+  color: #fff4f5;
+}
+
+/* Form controls inherit the page's dark ground rather than the UA's white. */
+input,
+textarea,
+button,
+select {
+  color-scheme: dark;
+}
+
+::selection {
+  background: #ff1f3d;
+  color: #fff4f5;
 }
 
 /* ±8px vertical bob. The plain variant is for translate-centred nodes, which
@@ -322,9 +335,28 @@ body {
 }
 
 .mg-input::placeholder {
-  color: #a09a8a;
+  color: #7f666d;
 }
 
 .mg-terminal-input::placeholder {
-  color: #5d6a70;
+  color: #8e5a66;
+}
+
+/* Scrollbars in the queue rail, so a pale native bar does not cut the black. */
+.mg-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #8e0f22 transparent;
+}
+
+.mg-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.mg-scroll::-webkit-scrollbar-thumb {
+  background: #8e0f22;
+  border-radius: 4px;
+}
+
+.mg-scroll::-webkit-scrollbar-thumb:hover {
+  background: #ff1f3d;
 }

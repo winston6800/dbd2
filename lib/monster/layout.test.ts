@@ -9,6 +9,7 @@ import {
 } from './layout';
 import { MAX_HP } from './types';
 import type { MiniBoss } from './types';
+import { COLORS } from './tokens';
 
 function boss(id: string, overrides: Partial<MiniBoss> = {}): MiniBoss {
   return { id, name: id, goalText: id, maxHp: MAX_HP, hp: MAX_HP, defeated: false, tasks: [], ...overrides };
@@ -72,10 +73,10 @@ describe('computeLayout', () => {
     // 2 inter-node segments + 1 segment up to the goal monster.
     expect(lines).toHaveLength(3);
     // The segment leaving a defeated boss is dashed and grey.
-    expect(lines[0].stroke).toBe('#c9c4b6');
+    expect(lines[0].stroke).toBe(COLORS.dashedLine);
     expect(lines[0].dash).toBe('3,3');
     // Live segments are solid ink.
-    expect(lines[1].stroke).toBe('#2b2b2b');
+    expect(lines[1].stroke).toBe(COLORS.chainLine);
     expect(lines[1].dash).toBe('');
     // The last segment terminates at the goal monster.
     expect(lines[2].x2).toBe(50);

@@ -35,8 +35,8 @@ export const AddTaskBar: React.FC<{ onAdd: (text: string) => void }> = ({ onAdd 
           width: 8,
           height: 8,
           borderRadius: '50%',
-          background: COLORS.signalGreen,
-          boxShadow: `0 0 6px ${COLORS.signalGreen}`,
+          background: COLORS.signalDot,
+          boxShadow: `0 0 6px ${COLORS.signalDot}`,
           flexShrink: 0,
         }}
       />
@@ -70,7 +70,7 @@ export const AddTaskBar: React.FC<{ onAdd: (text: string) => void }> = ({ onAdd 
       <button
         type="submit"
         style={{
-          background: COLORS.actionYellow,
+          background: COLORS.actionFill,
           border: 'none',
           borderRadius: 2,
           padding: '10px 18px',

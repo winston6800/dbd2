@@ -120,6 +120,13 @@ Every visual is pure CSS — border-radius blobs, clip-path teeth, absolutely po
 inline SVG for the connector lines. No images, no icon library. The only external asset is the Google
 Fonts stylesheet for Kalam and Nunito.
 
+The palette is black and red: a near-black ground under a red bloom and a faint graph-paper grid, one
+vivid red (`#ff1f3d`) carrying every accent — monster faces, boss chain, CTAs, the terminal bar — and
+bright ink for type. Panels and inputs are outlined in a deeper red so the ink-bordered primary button
+stays the loudest thing on screen; the Milk cartons stay white on purpose, and take a dark outline
+(`cartonInk`) instead. Every hue lives in `lib/monster/tokens.ts` — change it there, not in the
+components. The geometry, radii and animation timings are still the handoff's.
+
 See [app.md](./app.md) for behaviour, and `lib/monster/tokens.ts` for the exact colours and radii.
 
 ## Testing the subscription end to end

@@ -15,9 +15,9 @@ import { fetchSummary, type AnalyticsSummary } from '../../lib/monster/analytics
  */
 
 /** Validated ordinal ramp, light → dark. Order carries funnel depth. */
-const FUNNEL_RAMP = ['#7fb377', '#5f9457', '#4f7a49', '#3b5c37', '#2a4228'];
+const FUNNEL_RAMP = ['#ff1f3d', '#e01535', '#b8102a', '#8e0b20', '#5f0715'];
 /** Single-series hue for the non-ordinal charts. */
-const SERIES = '#4f7a49';
+const SERIES = '#ff1f3d';
 
 const STAGE_LABELS: Record<string, string> = {
   landing_view: 'Landed',
@@ -31,7 +31,7 @@ const RANGES = [7, 14, 30] as const;
 
 const card: React.CSSProperties = {
   background: COLORS.surface,
-  border: `2px solid ${COLORS.ink}`,
+  border: `2px solid ${COLORS.cardBorder}`,
   borderRadius: 14,
   padding: '16px 18px',
 };
@@ -123,7 +123,7 @@ export const AnalyticsDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
             onClick={onBack}
             style={{
               background: COLORS.surface,
-              border: `2px solid ${COLORS.ink}`,
+              border: `2px solid ${COLORS.cardBorder}`,
               color: COLORS.ink,
               borderRadius: 10,
               padding: '8px 14px',
@@ -146,7 +146,7 @@ export const AnalyticsDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
               style={{
                 background: r === days ? COLORS.ink : COLORS.surface,
                 color: r === days ? COLORS.surface : COLORS.ink,
-                border: `2px solid ${COLORS.ink}`,
+                border: `2px solid ${COLORS.cardBorder}`,
                 borderRadius: 8,
                 padding: '6px 12px',
                 fontSize: 12,

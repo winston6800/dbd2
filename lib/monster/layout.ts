@@ -1,4 +1,5 @@
 import type { MiniBoss } from './types';
+import { COLORS } from './tokens';
 
 /** Board height in px. Horizontal positions are percentages of board width. */
 export const BOARD_H = 640;
@@ -110,7 +111,7 @@ export function computeLayout(miniBosses: MiniBoss[], activeIndex: number): Boar
       y1: toViewBoxY(a.y),
       x2: b.x,
       y2: toViewBoxY(b.y),
-      stroke: leavingDefeated ? '#c9c4b6' : '#2b2b2b',
+      stroke: leavingDefeated ? COLORS.dashedLine : COLORS.chainLine,
       width: 0.35,
       dash: leavingDefeated ? '3,3' : '',
     });
@@ -122,7 +123,7 @@ export function computeLayout(miniBosses: MiniBoss[], activeIndex: number): Boar
       y1: toViewBoxY(last.y),
       x2: GOAL_MONSTER_X,
       y2: toViewBoxY(GOAL_MONSTER_CENTER_Y),
-      stroke: '#2b2b2b',
+      stroke: COLORS.chainLine,
       width: 0.35,
       dash: '',
     });

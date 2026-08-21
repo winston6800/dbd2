@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../lib/auth';
-import { BLOB_RADIUS, COLORS, DISPLAY_FONT, PAPER_BACKGROUND } from '../lib/monster/tokens';
+import { ACTIVE_GLOW, BLOB_RADIUS, COLORS, DISPLAY_FONT, PAPER_BACKGROUND } from '../lib/monster/tokens';
 import { HeroFace } from './MonsterGoals/MonsterFace';
 import { track } from '../lib/monster/analytics';
 
@@ -15,7 +15,7 @@ type Mode = 'login' | 'signup';
 const inputStyle: React.CSSProperties = {
   width: '100%',
   background: COLORS.surface,
-  border: `2px solid ${COLORS.ink}`,
+  border: `2px solid ${COLORS.cardBorder}`,
   borderRadius: 10,
   padding: '12px 14px',
   color: 'inherit',
@@ -124,7 +124,8 @@ export const AuthScreen: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             height: 150,
             borderRadius: BLOB_RADIUS,
             background: COLORS.surface,
-            border: `3px solid ${COLORS.ink}`,
+            border: `3px solid ${COLORS.monsterInk}`,
+            boxShadow: ACTIVE_GLOW,
             position: 'relative',
             animation: 'floatIdleNoX 3.5s ease-in-out infinite',
           }}
@@ -161,12 +162,12 @@ export const AuthScreen: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           <div
             style={{
               width: '100%',
-              background: '#f7e6e4',
-              border: '2px solid #a3564f',
+              background: COLORS.dangerFill,
+              border: `2px solid ${COLORS.danger}`,
               borderRadius: 10,
               padding: '10px 12px',
               fontSize: 13,
-              color: '#7c3f3a',
+              color: COLORS.dangerText,
               textAlign: 'left',
               marginTop: -12,
             }}
@@ -180,7 +181,7 @@ export const AuthScreen: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           disabled={loading}
           style={{
             width: '100%',
-            background: COLORS.successGreen,
+            background: COLORS.ctaFill,
             border: `2px solid ${COLORS.ink}`,
             borderRadius: 10,
             padding: 14,

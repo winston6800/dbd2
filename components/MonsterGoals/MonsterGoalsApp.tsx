@@ -294,7 +294,7 @@ export const MonsterGoalsApp: React.FC = () => {
               onClick={() => setAddingBoss(true)}
               style={{
                 background: COLORS.surface,
-                border: `2px solid ${COLORS.ink}`,
+                border: `2px solid ${COLORS.cardBorder}`,
                 color: COLORS.ink,
                 borderRadius: 10,
                 padding: '8px 14px',
@@ -335,7 +335,7 @@ export const MonsterGoalsApp: React.FC = () => {
               <div
                 style={{
                   textAlign: 'center',
-                  background: COLORS.successGreen,
+                  background: COLORS.ctaFill,
                   border: `2px solid ${COLORS.ink}`,
                   borderRadius: 18,
                   padding: 16,

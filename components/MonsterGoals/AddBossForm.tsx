@@ -18,7 +18,7 @@ export const AddBossForm: React.FC<{ onAdd: (name: string) => void }> = ({ onAdd
         display: 'flex',
         gap: 10,
         background: COLORS.surface,
-        border: `2px solid ${COLORS.ink}`,
+        border: `2px solid ${COLORS.cardBorder}`,
         padding: 14,
         borderRadius: 14,
       }}
@@ -42,7 +42,7 @@ export const AddBossForm: React.FC<{ onAdd: (name: string) => void }> = ({ onAdd
       <button
         type="submit"
         style={{
-          background: COLORS.successGreen,
+          background: COLORS.ctaFill,
           border: `2px solid ${COLORS.ink}`,
           borderRadius: 8,
           padding: '10px 16px',

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BLOB_RADIUS, COLORS, DISPLAY_FONT } from '../../lib/monster/tokens';
+import { ACTIVE_GLOW, BLOB_RADIUS, COLORS, DISPLAY_FONT } from '../../lib/monster/tokens';
 import { HeroFace } from './MonsterFace';
 
 export const CreateGoalScreen: React.FC<{ onCreate: (name: string) => void }> = ({ onCreate }) => {
@@ -31,7 +31,8 @@ export const CreateGoalScreen: React.FC<{ onCreate: (name: string) => void }> = 
           height: 150,
           borderRadius: BLOB_RADIUS,
           background: COLORS.surface,
-          border: `3px solid ${COLORS.ink}`,
+          border: `3px solid ${COLORS.monsterInk}`,
+          boxShadow: ACTIVE_GLOW,
           position: 'relative',
           animation: 'floatIdleNoX 3.5s ease-in-out infinite',
         }}
@@ -52,7 +53,7 @@ export const CreateGoalScreen: React.FC<{ onCreate: (name: string) => void }> = 
         style={{
           width: '100%',
           background: COLORS.surface,
-          border: `2px solid ${COLORS.ink}`,
+          border: `2px solid ${COLORS.cardBorder}`,
           borderRadius: 10,
           padding: '12px 14px',
           color: 'inherit',
@@ -64,7 +65,7 @@ export const CreateGoalScreen: React.FC<{ onCreate: (name: string) => void }> = 
         type="submit"
         style={{
           width: '100%',
-          background: COLORS.successGreen,
+          background: COLORS.ctaFill,
           border: `2px solid ${COLORS.ink}`,
           borderRadius: 10,
           padding: 14,

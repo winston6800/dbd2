@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BLOB_RADIUS, COLORS, DISPLAY_FONT, PAPER_BACKGROUND } from '../lib/monster/tokens';
+import { ACTIVE_GLOW, BLOB_RADIUS, COLORS, DISPLAY_FONT, PAPER_BACKGROUND } from '../lib/monster/tokens';
 import { track, trackOnce } from '../lib/monster/analytics';
 import { HeroFace, MonsterFace } from './MonsterGoals/MonsterFace';
 import { MilkUnit } from './MonsterGoals/MilkUnit';
@@ -32,8 +32,9 @@ const BEATS: { title: string; body: string }[] = [
 ];
 
 const primaryButton: React.CSSProperties = {
-  background: COLORS.successGreen,
+  background: COLORS.ctaFill,
   border: `2px solid ${COLORS.ink}`,
+  boxShadow: '0 0 22px rgba(255, 31, 61, 0.45)',
   borderRadius: 10,
   padding: '14px 28px',
   fontFamily: DISPLAY_FONT,
@@ -45,7 +46,7 @@ const primaryButton: React.CSSProperties = {
 
 const card: React.CSSProperties = {
   background: COLORS.surface,
-  border: `2px solid ${COLORS.ink}`,
+  border: `2px solid ${COLORS.cardBorder}`,
   borderRadius: 14,
   padding: '16px 18px',
 };
@@ -98,14 +99,23 @@ export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = 
             height: 130,
             borderRadius: BLOB_RADIUS,
             background: COLORS.surface,
-            border: `3px solid ${COLORS.ink}`,
+            border: `3px solid ${COLORS.monsterInk}`,
+            boxShadow: ACTIVE_GLOW,
             position: 'relative',
             animation: 'floatIdleNoX 3.5s ease-in-out infinite',
           }}
         >
           <HeroFace />
         </div>
-        <h1 className="mg-hero-title" style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, margin: 0 }}>
+        <h1
+          className="mg-hero-title"
+          style={{
+            fontFamily: DISPLAY_FONT,
+            fontWeight: 700,
+            margin: 0,
+            textShadow: '0 0 26px rgba(255, 31, 61, 0.45)',
+          }}
+        >
           Turn the goal you keep avoiding into a monster.
         </h1>
         <p style={{ color: COLORS.mutedText, fontSize: 16, margin: 0, maxWidth: 560 }}>
@@ -133,8 +143,8 @@ export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = 
               transform: 'translate(-50%, -50%)',
               borderRadius: BLOB_RADIUS,
               background: COLORS.surface,
-              border: `3px solid ${COLORS.ink}`,
-              boxShadow: '0 0 0 4px rgba(43,43,43,0.08)',
+              border: `3px solid ${COLORS.monsterInk}`,
+              boxShadow: ACTIVE_GLOW,
               zIndex: 3,
             }}
           >

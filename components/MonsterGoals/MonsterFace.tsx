@@ -145,7 +145,7 @@ export function faceVariantStyles(variant: number, ink: string): {
   }
 }
 
-export const MonsterFace: React.FC<{ variant: number; ink?: string }> = ({ variant, ink = COLORS.ink }) => {
+export const MonsterFace: React.FC<{ variant: number; ink?: string }> = ({ variant, ink = COLORS.monsterInk }) => {
   const { eyeLeft, eyeRight, mouth } = faceVariantStyles(variant, ink);
   return (
     <>
@@ -166,7 +166,7 @@ export const HeroFace: React.FC = () => (
         top: '32%',
         width: '16%',
         height: '5%',
-        background: COLORS.ink,
+        background: COLORS.monsterInk,
         borderRadius: 3,
         transform: 'rotate(-18deg)',
       }}
@@ -178,7 +178,7 @@ export const HeroFace: React.FC = () => (
         top: '32%',
         width: '16%',
         height: '5%',
-        background: COLORS.ink,
+        background: COLORS.monsterInk,
         borderRadius: 3,
         transform: 'rotate(18deg)',
       }}
@@ -190,7 +190,7 @@ export const HeroFace: React.FC = () => (
         top: '54%',
         width: '56%',
         height: '20%',
-        background: COLORS.ink,
+        background: COLORS.monsterInk,
         clipPath: TEETH_CLIP,
         borderRadius: '0 0 6px 6px',
       }}

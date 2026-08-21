@@ -23,7 +23,7 @@ export const TaskQueue: React.FC<TaskQueueProps> = ({ tasks, onComplete }) => {
       className="mg-queue-card"
       style={{
         background: COLORS.surface,
-        border: `2px solid ${COLORS.ink}`,
+        border: `2px solid ${COLORS.cardBorder}`,
         borderRadius: 14,
         padding: '14px 16px',
       }}

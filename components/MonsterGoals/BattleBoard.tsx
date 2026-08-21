@@ -1,7 +1,7 @@
 import React from 'react';
 import type { CSSProperties } from 'react';
 import type { MiniBoss } from '../../lib/monster/types';
-import { BLOB_RADIUS, COLORS, DISPLAY_FONT, GOAL_BLOB_RADIUS } from '../../lib/monster/tokens';
+import { ACTIVE_GLOW, BLOB_RADIUS, COLORS, DISPLAY_FONT, GOAL_BLOB_RADIUS } from '../../lib/monster/tokens';
 import {
   ACTIVE_BOSS_Y,
   ADD_BOSS_CENTER_Y,
@@ -101,8 +101,9 @@ export const BattleBoard: React.FC<BattleBoardProps> = ({
             marginLeft: -8,
             marginTop: -8,
             borderRadius: '50%',
-            background: COLORS.terminalTip,
+            background: COLORS.ctaFill,
             border: `2px solid ${COLORS.ink}`,
+            boxShadow: ACTIVE_GLOW,
             transition: 'left 0.55s ease, top 0.55s ease',
             zIndex: 5,
           }}
@@ -114,8 +115,8 @@ export const BattleBoard: React.FC<BattleBoardProps> = ({
         style={faceBox(GOAL_MONSTER_X, GOAL_MONSTER_CENTER_Y - goalMonsterSize / 2, goalMonsterSize, {
           borderRadius: GOAL_BLOB_RADIUS,
           background: COLORS.surface,
-          border: `3px solid ${COLORS.ink}`,
-          opacity: allDefeated ? 0.2 : 0.32,
+          border: `3px solid ${COLORS.monsterInk}`,
+          opacity: allDefeated ? 0.35 : 0.55,
           filter: 'blur(1px)',
           animation: 'floatIdle 3.5s ease-in-out infinite',
           zIndex: 0,
@@ -134,6 +135,8 @@ export const BattleBoard: React.FC<BattleBoardProps> = ({
           fontWeight: 700,
           fontSize: 15,
           whiteSpace: 'nowrap',
+          color: COLORS.monsterInk,
+          textShadow: '0 0 14px rgba(255, 31, 61, 0.55)',
         }}
       >
         {monsterName}
@@ -150,8 +153,8 @@ export const BattleBoard: React.FC<BattleBoardProps> = ({
         const py = defeating ? ACTIVE_BOSS_Y : p.y;
         const isDead = p.kind === 'dead';
         const emphasised = active || defeating;
-        const ink = emphasised ? COLORS.ink : COLORS.inkInactive;
-        const opacity = defeating ? 1 : active ? 1 : isDead ? 0.4 : 0.22;
+        const ink = emphasised ? COLORS.monsterInk : COLORS.monsterInkInactive;
+        const opacity = defeating ? 1 : active ? 1 : isDead ? 0.5 : 0.4;
         const variant = charSum(mb.id, i) % 4;
 
         return (
@@ -168,7 +171,7 @@ export const BattleBoard: React.FC<BattleBoardProps> = ({
                 cursor: 'pointer',
                 zIndex: defeating ? 6 : active ? 3 : 1,
                 filter: emphasised || isDead ? 'none' : 'blur(1.5px)',
-                boxShadow: active ? '0 0 0 4px rgba(43,43,43,0.08)' : 'none',
+                boxShadow: active ? ACTIVE_GLOW : 'none',
                 ...(defeating ? { animation: 'bossDefeat 1.3s ease-in-out forwards' } : {}),
               })}
             >
@@ -182,7 +185,7 @@ export const BattleBoard: React.FC<BattleBoardProps> = ({
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: 28,
-                    color: COLORS.mutedBorder,
+                    color: COLORS.doneGlyph,
                   }}
                 >
                   ✓
@@ -271,12 +274,12 @@ export const BattleBoard: React.FC<BattleBoardProps> = ({
         title="Add sub-goal"
         style={faceBox(ADD_BOSS_X, ADD_BOSS_CENTER_Y - 24, 48, {
           borderRadius: 14,
-          border: `2px dashed ${COLORS.mutedText}`,
+          border: `2px dashed ${COLORS.dashedLine}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: 22,
-          color: COLORS.mutedText,
+          color: COLORS.doneGlyph,
           cursor: 'pointer',
           background: COLORS.paper,
           zIndex: 2,

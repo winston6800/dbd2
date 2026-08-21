@@ -40,7 +40,8 @@ The working view. Top to bottom:
   bosses stacked and blurred on the right, defeated bosses in a faded trail along the bottom, all
   chained by connector lines. Milk units orbit the active boss.
 - **Add-sub-boss form** — appears inline while adding.
-- **Add-task bar** — a dark terminal strip labelled `QUEUE ORDER`.
+- **Add-task bar** — a black terminal strip labelled `QUEUE ORDER`, with a red status dot and
+  a red **+ ADD** key.
 - **Task queue** — the checklist for the active boss, undone tasks first.
 - **Victory banner** — once every mini-boss is defeated.
 

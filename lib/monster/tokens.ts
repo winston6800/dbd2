@@ -3,38 +3,64 @@ import type { CSSProperties } from 'react';
 /**
  * Monster Goals design tokens.
  *
- * Values are taken verbatim from the design handoff (`README.md` → Design Tokens)
- * and the prototype. Nothing here should be tweaked without a design change.
+ * The palette is black and red: a near-black ground, one vivid red that carries
+ * every accent, and bright ink for type and outlines. Radii, geometry and the
+ * animation values below still come verbatim from the design handoff — only the
+ * colours were re-cut for this theme, so change hues here rather than in the
+ * components.
  */
 
+/** The one red. Everything red on screen is this, dimmed, or lifted. */
+const RED = '#ff1f3d';
+const RED_BRIGHT = '#ff5470';
+const RED_SOFT = '#ff8fa3';
+const RED_DEEP = '#8e0f22';
+const BLACK = '#08070a';
+
+/** Red glow ring used for whatever the player is currently fighting. */
+export const ACTIVE_GLOW = '0 0 0 4px rgba(255, 31, 61, 0.22), 0 0 30px rgba(255, 31, 61, 0.38)';
+
 export const COLORS = {
-  paper: '#f3f0e8',
-  gridLine: '#e7e2d5',
-  ink: '#2b2b2b',
-  inkInactive: '#4a463e',
-  mutedBorder: '#8a8578',
-  mutedText: '#6b665c',
-  metaText: '#a09a8a',
-  doneText: '#a8a290',
-  surface: '#fff',
-  inputFill: '#faf8f2',
-  defeatedFill: '#d8d4c6',
-  track: '#e3e0d5',
-  dashedLine: '#c9c4b6',
-  formBorder: '#cfc9ba',
-  successGreen: '#a7d4a0',
-  doneGlyph: '#4f7a49',
-  doneFill: '#dfe9e0',
-  terminalBg: '#23282b',
-  terminalBorder: '#101315',
-  terminalInput: '#171b1d',
-  terminalLine: '#3a4247',
-  terminalText: '#d8e2e6',
-  terminalLabel: '#8fa3ab',
-  terminalTip: '#eef2f7',
-  signalGreen: '#6fbf5a',
-  actionYellow: '#c9c04a',
-  milkBadge: '#7a8fa8',
+  paper: BLACK,
+  gridLine: '#1b0f14',
+  ink: '#fff4f5',
+  inkInactive: '#7d5a62',
+  mutedBorder: '#6d2432',
+  mutedText: '#b9a4aa',
+  metaText: RED_BRIGHT,
+  doneText: '#7f666d',
+  surface: '#111013',
+  inputFill: '#1a1116',
+  defeatedFill: '#241318',
+  track: '#2b171e',
+  dashedLine: '#6a2733',
+  formBorder: '#54202b',
+  /** Panels, inputs and secondary buttons: red outlines, so the white-bordered
+   *  call to action stays the loudest thing on any screen. */
+  cardBorder: '#8e0f22',
+  /** Primary call to action — red fill, ink border, ink label. */
+  ctaFill: RED,
+  doneGlyph: RED_BRIGHT,
+  doneFill: '#3d0f1b',
+  /** Monster faces and the chain between bosses: red on black. */
+  monsterInk: RED,
+  monsterInkInactive: RED_DEEP,
+  chainLine: RED,
+  /** Milk cartons stay white, so their outlines and faces go dark instead. */
+  cartonInk: '#0a080b',
+  terminalBg: '#0c0a0d',
+  terminalBorder: '#000000',
+  terminalInput: '#151016',
+  terminalLine: '#43151f',
+  terminalText: '#ffe8ec',
+  terminalLabel: RED_SOFT,
+  terminalTip: '#fff4f5',
+  signalDot: RED,
+  actionFill: RED,
+  milkBadge: RED_SOFT,
+  danger: RED_BRIGHT,
+  dangerFill: '#2a0b12',
+  dangerText: '#ffc2cb',
 } as const;
 
 /** Irregular blob used for monster bodies. */
@@ -51,16 +77,26 @@ export const TEETH_CLIP =
 export const DISPLAY_FONT = "'Kalam', cursive";
 export const BODY_FONT = "'Nunito', sans-serif";
 
-/** 28px graph paper, drawn as two linear gradients over the paper colour. */
+/**
+ * 28px graph paper on black, lit by a red bloom from the top of the page. The
+ * background shorthand only carries the colour — the layers are listed in
+ * `backgroundImage` so the glow can sit unrepeated over the tiled grid.
+ */
 export const PAPER_BACKGROUND: CSSProperties = {
   background: COLORS.paper,
-  backgroundImage: `linear-gradient(${COLORS.gridLine} 1px, transparent 1px), linear-gradient(90deg, ${COLORS.gridLine} 1px, transparent 1px)`,
-  backgroundSize: '28px 28px',
+  backgroundImage: [
+    'radial-gradient(120% 70% at 50% -10%, rgba(255, 31, 61, 0.22), transparent 62%)',
+    `linear-gradient(${COLORS.gridLine} 1px, transparent 1px)`,
+    `linear-gradient(90deg, ${COLORS.gridLine} 1px, transparent 1px)`,
+  ].join(', '),
+  backgroundSize: '100% 100%, 28px 28px, 28px 28px',
+  backgroundRepeat: 'no-repeat, repeat, repeat',
+  backgroundAttachment: 'fixed, scroll, scroll',
 };
 
 /** Milk carton body / cap tints, indexed by task-id hash. */
-export const MILK_BODY_TINTS = ['#ffffff', '#fdf6e6', '#ecf6f0', '#f7eef5'] as const;
-export const MILK_CAP_TINTS = ['#eef2f7', '#f2e2b8', '#cfe7da', '#eccfe2'] as const;
+export const MILK_BODY_TINTS = ['#ffffff', '#fff1f3', '#ffe6ea', '#fbf7f8'] as const;
+export const MILK_CAP_TINTS = ['#ff1f3d', '#ff5470', '#c81232', '#ff8fa3'] as const;
 
 /** Firing patterns, indexed by the same task-id hash as the tints. */
 export interface ShotPattern {
@@ -75,9 +111,9 @@ export interface ShotPattern {
 }
 
 export const SHOT_PATTERNS: readonly ShotPattern[] = [
-  { count: 3, w: 7, h: 7, radius: '50%', cycle: 0.95, gap: 0.11, anim: 'pelletToCenter', bg: '#eef2f7' },
-  { count: 2, w: 11, h: 11, radius: '3px', cycle: 1.5, gap: 0.16, anim: 'pelletSpin', bg: '#f7e6b0' },
-  { count: 4, w: 5, h: 12, radius: '3px', cycle: 0.7, gap: 0.07, anim: 'pelletToCenter', bg: '#cbe8d8' },
+  { count: 3, w: 7, h: 7, radius: '50%', cycle: 0.95, gap: 0.11, anim: 'pelletToCenter', bg: '#ff1f3d' },
+  { count: 2, w: 11, h: 11, radius: '3px', cycle: 1.5, gap: 0.16, anim: 'pelletSpin', bg: '#ff5470' },
+  { count: 4, w: 5, h: 12, radius: '3px', cycle: 0.7, gap: 0.07, anim: 'pelletToCenter', bg: '#ff2d4f' },
   {
     count: 1,
     w: 15,
@@ -86,6 +122,6 @@ export const SHOT_PATTERNS: readonly ShotPattern[] = [
     cycle: 1.7,
     gap: 0.2,
     anim: 'pelletWobble',
-    bg: '#f2d3e6',
+    bg: '#ff8fa3',
   },
 ];
