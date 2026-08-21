@@ -1,6 +1,7 @@
-# Monster Goals
+# DeadByDefault
 
-A goal-tracking app reframed as a boss fight. Name one big goal (the "monster"), break it into
+A platform for rebuilding the self-respect years of internet defaulted out of you, reframed as a
+boss fight so it is actually fun to show up for. Name one big goal (the "monster"), break it into
 mini-bosses (sub-goals), and add tasks under the active mini-boss. Checking off a task deploys a
 "Milk" unit into orbit around the active boss, where it fires pellets forever. Each completed task
 takes 12 HP off the boss. At 0 HP the boss plays a defeat animation, drops into a faded graveyard

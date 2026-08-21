@@ -18,16 +18,16 @@ const DEMO_H = 380;
 
 const BEATS: { title: string; body: string }[] = [
   {
-    title: 'Name your monster',
-    body: 'The goal you have been avoiding becomes a monster with a name. Somehow that helps.',
+    title: 'Name the thing you keep avoiding',
+    body: 'It becomes a monster with a name. Somehow that makes it harder to keep pretending it is not there.',
   },
   {
-    title: 'Break it into mini-bosses',
+    title: 'Break it into bosses',
     body: 'Each sub-goal is a boss with 100 HP, chained between you and the thing you actually want.',
   },
   {
-    title: 'Send in the Milk',
-    body: 'Every task you finish deploys a Milk unit into orbit, where it fires on the boss forever.',
+    title: 'Deploy proof, not promises',
+    body: 'Every task you finish sends a Milk unit into orbit, where it fires on the boss forever. That is a receipt, not a vibe.',
   },
 ];
 
@@ -107,6 +107,17 @@ export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = 
         >
           <HeroFace />
         </div>
+        <span
+          style={{
+            fontFamily: DISPLAY_FONT,
+            fontWeight: 700,
+            fontSize: 13,
+            letterSpacing: '2px',
+            color: COLORS.metaText,
+          }}
+        >
+          DEADBYDEFAULT
+        </span>
         <h1
           className="mg-hero-title"
           style={{
@@ -116,11 +127,13 @@ export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = 
             textShadow: '0 0 26px rgba(255, 31, 61, 0.45)',
           }}
         >
-          Turn the goal you keep avoiding into a monster.
+          Built different isn't a personality. It's a default you have to overwrite.
         </h1>
         <p style={{ color: COLORS.mutedText, fontSize: 16, margin: 0, maxWidth: 560 }}>
-          Monster Goals is a goal tracker shaped like a boss fight. Break the thing down, check tasks off,
-          and watch your little army chip it to zero.
+          Years of feeds built to keep you scrolling trained you to flake on yourself by default.
+          DeadByDefault is a goal tracker shaped like a boss fight — name the thing, break it down, and
+          every task you finish is proof stacking up against the version of you the internet talked you
+          into.
         </p>
         <button onClick={start} style={primaryButton}>
           Start free trial
@@ -172,7 +185,7 @@ export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = 
             textAlign: 'center',
           }}
         >
-          Three finished tasks, three Milk units, one boss having a bad day.
+          Three finished tasks, three units of proof, one boss having a bad day.
         </div>
       </div>
 
@@ -203,7 +216,8 @@ export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = 
         <div style={{ fontSize: 13, color: COLORS.mutedText, marginTop: 4, marginBottom: 14 }}>
           Try it for three days without paying. We take a card up front so it keeps working when the
           trial ends — cancel before then and you are not charged, and cancelling later takes two
-          clicks. Unlimited mini-bosses and tasks, synced across your devices.
+          clicks. Unlimited bosses and tasks, synced across your devices, still nagging you back toward
+          the person you already know you can be.
         </div>
         <button onClick={start} style={primaryButton}>
           Start your fight
@@ -211,7 +225,7 @@ export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = 
       </div>
 
       <div style={{ textAlign: 'center', fontSize: 12, color: COLORS.metaText }}>
-        Built for people whose to-do lists have stopped working on them.
+        Years of the internet trained you to flake on yourself by default. This is where you stop.
       </div>
       <div style={{ textAlign: 'center', fontSize: 12, color: COLORS.metaText }}>
         If your dream is working at Amazon, Google, Microsoft, or OpenAI for the money — go fuck yourself, and GTFO.

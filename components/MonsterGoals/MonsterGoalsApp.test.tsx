@@ -39,7 +39,7 @@ async function mountApp() {
 
 function summonGoal(name = 'Learn Spanish') {
   fireEvent.change(screen.getByPlaceholderText('Goal, e.g. Learn Spanish'), { target: { value: name } });
-  fireEvent.click(screen.getByRole('button', { name: 'Summon Monster' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Start the Fight' }));
 }
 
 function addSubBoss(text = 'Finish unit one') {

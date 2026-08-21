@@ -76,7 +76,7 @@ export const CreateGoalScreen: React.FC<{ onCreate: (name: string) => void }> = 
           cursor: 'pointer',
         }}
       >
-        Summon Monster
+        Start the Fight
       </button>
     </form>
   );

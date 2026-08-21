@@ -133,9 +133,9 @@ export const AuthScreen: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           <HeroFace />
         </div>
 
-        <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>Monster Goals</div>
+        <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>DeadByDefault</div>
         <div style={{ color: COLORS.mutedText, fontSize: 14, marginTop: -12 }}>
-          {mode === 'login' ? 'Sign in to return to the fight.' : 'Create an account to summon your first monster.'}
+          {mode === 'login' ? 'Sign in to get back to the fight.' : 'Create an account and name the thing you have been avoiding.'}
         </div>
 
         <input

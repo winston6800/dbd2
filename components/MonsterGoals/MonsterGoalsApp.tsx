@@ -344,7 +344,7 @@ export const MonsterGoalsApp: React.FC = () => {
                   fontSize: 16,
                 }}
               >
-                {goal.monsterName} has been fully defeated! Goal complete.
+                {goal.monsterName} has been fully defeated! Goal complete. That's proof, not luck.
               </div>
             )}
           </div>

@@ -18,7 +18,7 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
   }
 
   componentDidCatch(error: Error) {
-    console.error('Monster Goals crashed:', error);
+    console.error('DeadByDefault crashed:', error);
   }
 
   render() {
