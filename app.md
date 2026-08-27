@@ -2,7 +2,7 @@
 
 ## Access
 
-Two gates stand in front of the game, in order:
+Two gates stand in front of the app, in order:
 
 1. **Sign in** (`AuthScreen`) — email and password via Supabase. Sign-up sends a confirmation email;
    the account is not usable until the link is clicked.
@@ -19,80 +19,92 @@ Emails listed in `VITE_ADMIN_EMAILS` skip the second gate entirely. A separate l
 `VITE_ANALYTICS_EMAILS`, controls who sees the Analytics link — the two are intentionally not the
 same list, since skipping the paywall and seeing business data are different privileges.
 
-Signed-in users get an account row above the board: a trial countdown while trialing, a "cancels at
-period end" marker after cancelling, their email, **Analytics** (admins only), **Manage subscription**
-(the Stripe billing portal, where cancelling happens), and **Sign out**. The countdown is deliberately
-visible — the card is charged automatically, so nobody should be surprised by it.
+Signed-in users get an account row in the header: a trial countdown while trialing, a "cancels at
+period end" marker after cancelling, **Analytics** (admins only), **Manage** (the Stripe billing
+portal, where cancelling happens), and **Sign out**. The countdown is deliberately visible — the card
+is charged automatically, so nobody should be surprised by it.
 
-## Screens
+## Screens (tabs)
 
-### Create Goal (empty state)
-First run. A floating monster, a text field, and **Summon Monster**. Naming a goal creates
-`{ name, monsterName, miniBosses: [] }` and reveals the board. New users always land here — there is
-no demo data.
+Six tabs, `Layout.tsx`'s nav bar:
 
-### Battle Board
-The working view. Top to bottom:
+### Command
+The daily loop, and where every session starts.
 
-- **Header** — goal name and progress (`"{n} of {total} mini-bosses defeated"`, or
-  `"No mini-bosses yet — add one to begin"`), plus **+ New Sub-Boss**.
-- **Board** (800×640) — the goal monster looming at the top, the active mini-boss centred, upcoming
-  bosses stacked and blurred on the right, defeated bosses in a faded trail along the bottom, all
-  chained by connector lines. Milk units orbit the active boss.
-- **Add-sub-boss form** — appears inline while adding.
-- **Add-task bar** — a black terminal strip labelled `QUEUE ORDER`, with a red status dot and
-  a red **+ ADD** key.
-- **Task queue** — the checklist for the active boss, undone tasks first.
-- **Victory banner** — once every mini-boss is defeated.
+- **Survival Pulse** — a 7-day heatmap. Each cell is a day; colour interpolates from black-on-red at
+  low volume to white-hot at high volume, with a checkmark overlay on days the Honor Code was kept.
+  Today's cell gets a red ring.
+- **Growth Objective** — an editable one-line goal (e.g. "INCREASE DAILY UNIQUE VISITORS"), plus an
+  optional website link. Click either to edit in place.
+- **Growth Terminal** — +/- buttons logging today's loop count, and the **Honor Code Entry** button:
+  a confirmation modal asking whether the user actually shipped something today, with an optional
+  note. Marking it kept (or later revoking it) recalculates the streak immediately.
+- **Weekly Challenges** — three fixed challenges reset every Monday: ship 5 days, log 50 loops,
+  reach a 7-day streak. Progress bars only; no reward beyond seeing it fill.
+- **Take a Break** — toggles maintenance mode for today, which does not break the streak but greys
+  out the terminal and marks the day as a rest day on the heatmap instead of a zero.
+
+### Feed
+Activities from people you follow and people in your groups, today only: shipped (with note),
+logged N loops, or took a break. Each activity can take one of four emoji reactions (🔥🚀💪👏); one
+reaction per person per activity, toggleable.
+
+### Discover
+Founders to follow: members of your groups you are not already following, plus anyone decoded from a
+follow link pasted into **Add follow link**. Search filters by name.
+
+### Groups
+Create a group to get a shareable join link (`?join=<base64>`); anyone who opens it and enters a name
+joins with a live-updating snapshot of their state. Also lists who you follow (via a similar
+`?follow=<base64>` link from their Profile tab), with an unfollow control.
+
+### Analytics (Achievements)
+Read-only stats: total loops, streak, average daily loops, "conversion resilience", and four
+survival milestones (3-day streak, 7-day streak, 10,000 total loops, 30 morning logs) with progress
+bars. Not to be confused with the admin analytics dashboard behind the header's **Analytics** link —
+that one is business metrics (signups, funnel, MRR), this one is the user's own game stats.
+
+### Profile
+Display name (editable, used everywhere the person appears to others) and a **Copy follow link**
+button. Below that, the same heatmap as Command but zoomable: Week / Month / Year / All, with a year
+picker for the "All" view.
 
 ## Interactions
 
-1. **Add a sub-boss.** Both **+ New Sub-Boss** and the dashed `+` node on the board open the same
-   inline form. The new boss is inserted at `activeIndex + 1` — mid-chain, never as a branch — with
-   100 HP and no tasks. If it is the first one, it becomes active.
-2. **Add a task.** Appended to the active boss's list via the terminal bar.
-3. **Complete a task** — the core loop. Checking an unchecked box:
-   - marks the task done and takes `MILK_DMG = 12` HP off the active boss (floored at 0),
-   - spawns a hit particle at the boss (600ms),
-   - adds a Milk unit to the orbit, which fires pellets from then on.
+1. **Log a loop.** +/- on Command. Positive deltas fire `track('loop_logged')`, add to today's
+   `dailyUvs`, and recompute the streak. Negative deltas floor at 0 and never go below it.
+2. **Honor Code.** The confirmation modal is the only way to flip `dailyShipped` for today; there is
+   no direct toggle. Marking it kept fires `track('honor_code_kept')`.
+3. **Break days.** Toggling maintenance writes `dailyInfrastructureFocus[today]` and recomputes the
+   streak with that day counted as active (a break does not cost the streak).
+4. **Groups and following.** Both are link-based, not account-lookup-based: the whole `UserState` of
+   the person being joined/followed rides along in the URL. Opening someone's join link a second time
+   (already a member) just syncs your state into the existing group instead of prompting again.
+5. **Dev menu.** The terminal-icon button (bottom-right, every screen) seeds 30 or 365 days of random
+   history, or resets the signed-in user's local data. Visible to any signed-in user — it only ever
+   touches that user's own storage, never someone else's.
 
-   Pellets are decorative — they never apply damage. Completed tasks cannot be un-checked; deploying
-   a Milk is one-way.
-4. **Boss defeat.** At 0 HP the boss is marked defeated and plays the 1300ms `bossDefeat` animation at
-   full size and centre. After it finishes the board advances to the first non-defeated boss and the
-   old boss re-renders into the graveyard trail. Its Milks go with it.
-5. **Select a boss.** Clicking any node makes it active; its tasks load into the queue.
-6. **Hover a boss.** Shows the sub-goal text the user actually typed, as a dark tooltip.
-7. **Monster naming.** Names are generated from the goal text: the longest non-stopword root,
-   truncated to 6 characters and capitalised, plus a hash-picked suffix and title — e.g. "Build base
-   mileage" becomes "Mileagoloth the Endless". Deterministic, so the same text always yields the same
-   name. An AI-generated name can replace it asynchronously; it never blocks the UI.
-
-Not implemented, by design: editing or deleting goals, bosses or tasks; un-checking; multiple goals
-per account; mobile layout.
+Not implemented, by design: multiple growth objectives per account; editing past days; a server-side
+directory for groups/following (it is link-based); mobile-specific layout beyond what Tailwind's
+responsive classes give for free.
 
 ## State
 
 ```
-goal: { name, monsterName, miniBosses: [ { id, name, goalText, maxHp, hp, defeated, tasks: [ { id, text, size, done } ] } ] } | null
-activeIndex, addingBoss, attackFx, defeatingId, hoverBossId
+UserState: { defaultKpi, websiteUrl?, growthObjective?, streak, growthDates[], dailyUvs, dailyGrowthActions,
+             dailyInfrastructureFocus, dailyShipped, dailyShipNote?, stats, achievements[], currentUvs,
+             isOnMaintenance, minThreshold }
 ```
 
-Everything else — defeated count, all-defeated flag, node positions, connector lines, the Milk list,
-checklist order — is derived at render time, never stored.
+Persisted to `localStorage` under `dbd_state_v1:<userId>` after every change and restored on mount.
+Groups (`dbd_groups_v2:<userId>`), following (`dbd_following_v1:<userId>`), kudos
+(`dbd_kudos_v1:<userId>`), challenges (`dbd_challenges_v1:<userId>`), the discovery link list
+(`dbd_discovery_list_v1:<userId>`), and the display name (`dbd_display_name:<userId>`) are separate
+keys, all scoped the same way — switching accounts on a shared device never leaks one person's data
+into another's. See `lib/growth/storage.ts`.
 
-`{ goal, activeIndex }` is written to `localStorage` under `monsterGoalsAppState:<userId>` after every
-mutation and restored on mount. Ids come from `lib/monster/ids.ts` and must never change once
-assigned: each monster's face, each carton's tint, and each unit's firing pattern are hashes of the id,
-so a changed id changes how things look.
+## Streak math
 
-## Determinism
-
-Four things are keyed off a character-sum hash, so the board looks stable across reloads:
-
-| Hash of | Picks |
-|---|---|
-| boss id + index | one of 4 face variants |
-| task id | one of 4 carton body/cap tints |
-| task id | one of 4 carton expressions |
-| task id | one of 4 pellet firing patterns |
+`calculateCurrentStreak` (`lib/growth/utils.ts`) merges three date sources — loop-logged days, break
+days, and Honor Code days — into one active-dates set, then counts backward from today (or yesterday,
+so logging late at night doesn't zero an active streak) while consecutive days hold. One gap ends it.

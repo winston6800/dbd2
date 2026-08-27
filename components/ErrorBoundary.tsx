@@ -1,5 +1,4 @@
 import React from 'react';
-import { COLORS, DISPLAY_FONT, PAPER_BACKGROUND } from '../lib/monster/tokens';
 
 interface State {
   error: Error | null;
@@ -8,7 +7,7 @@ interface State {
 /**
  * Without this, any render error shows a blank white page — the worst possible
  * first impression for someone arriving from a link. Shows a recoverable
- * message instead and leaves saved goals untouched.
+ * message instead and leaves saved progress untouched.
  */
 export class ErrorBoundary extends React.Component<{ children: React.ReactNode }, State> {
   state: State = { error: null };
@@ -25,37 +24,14 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
     if (!this.state.error) return this.props.children;
 
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          ...PAPER_BACKGROUND,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 14,
-          padding: 20,
-          textAlign: 'center',
-          color: COLORS.ink,
-        }}
-      >
-        <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>Something broke</div>
-        <div style={{ color: COLORS.mutedText, fontSize: 14, maxWidth: 420 }}>
-          The monsters got loose. Your saved goals are fine — reloading usually sorts it out.
+      <div className="min-h-screen bg-gradient-red flex flex-col items-center justify-center gap-3.5 p-5 text-center text-white">
+        <div className="text-2xl font-black italic uppercase">Something broke</div>
+        <div className="text-gray-500 text-sm max-w-[420px]">
+          The terminal glitched. Your saved progress is fine — reloading usually sorts it out.
         </div>
         <button
           onClick={() => window.location.reload()}
-          style={{
-            background: COLORS.ctaFill,
-            border: `2px solid ${COLORS.ink}`,
-            borderRadius: 10,
-            padding: '12px 24px',
-            fontFamily: DISPLAY_FONT,
-            fontWeight: 700,
-            fontSize: 15,
-            color: COLORS.ink,
-            cursor: 'pointer',
-          }}
+          className="px-6 py-3 rounded-xl bg-brand border-2 border-white text-white font-black uppercase tracking-widest"
         >
           Reload
         </button>

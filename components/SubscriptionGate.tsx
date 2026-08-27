@@ -1,51 +1,24 @@
 import React, { useEffect, useState } from 'react';
+import { Skull } from 'lucide-react';
 import { useAuth } from '../lib/auth';
-import { track, trackOnce } from '../lib/monster/analytics';
-import { ACTIVE_GLOW, BLOB_RADIUS, COLORS, DISPLAY_FONT, PAPER_BACKGROUND } from '../lib/monster/tokens';
-import { MonsterFace } from './MonsterGoals/MonsterFace';
+import { track, trackOnce } from '../lib/analytics';
 
 /**
  * The paywall. A card is collected up front and the trial converts on its own,
  * so the trial length and the price after it must both be stated plainly here —
  * a surprise charge is the fastest way to earn a chargeback.
- *
- * The handoff explicitly does not cover billing/payments UI ("Not yet
- * designed"). This gate is assembled from the documented design tokens so it
- * reads as the same product, but it is an extension — worth a designer's eye
- * before launch.
  */
 
 // Keep these honest — every line has to be true of what actually ships.
 const FEATURES = [
-  'Unlimited mini-bosses and tasks',
-  'Deploy Milk units and watch them fight',
-  'Your boss chain saved and synced across devices',
-  'Defeat animations and the graveyard trail',
+  'Unlimited groups and following',
+  'Streaks, heatmaps, and the Honor Code',
+  'Your growth data saved and synced across devices',
+  'Weekly challenges and survival milestones',
   'Cancel in two clicks, any time',
 ];
 
 const TRIAL_DAYS = 3;
-
-const pageStyle: React.CSSProperties = {
-  minHeight: '100vh',
-  ...PAPER_BACKGROUND,
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '32px 20px 60px',
-  color: COLORS.ink,
-};
-
-const linkStyle: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  padding: 0,
-  fontSize: 13,
-  cursor: 'pointer',
-  textDecoration: 'underline',
-  fontFamily: 'inherit',
-};
 
 export const SubscriptionGate: React.FC = () => {
   const { user, session, signOut, refreshSubscription, subscriptionLoading } = useAuth();
@@ -77,115 +50,44 @@ export const SubscriptionGate: React.FC = () => {
 
   if (subscriptionLoading) {
     return (
-      <div style={pageStyle}>
-        <div style={{ color: COLORS.mutedText, fontSize: 14 }}>Checking your access…</div>
+      <div className="min-h-screen bg-gradient-red flex items-center justify-center text-gray-500 text-sm">
+        Checking your access…
       </div>
     );
   }
 
   return (
-    <div style={pageStyle}>
-      <div
-        style={{
-          width: '100%',
-          maxWidth: 420,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 20,
-          alignItems: 'center',
-          textAlign: 'center',
-        }}
-      >
-        <div
-          style={{
-            width: 110,
-            height: 110,
-            borderRadius: BLOB_RADIUS,
-            background: COLORS.surface,
-            border: `3px solid ${COLORS.monsterInk}`,
-            boxShadow: ACTIVE_GLOW,
-            position: 'relative',
-            animation: 'floatIdleNoX 3.5s ease-in-out infinite',
-          }}
-        >
-          <MonsterFace variant={2} />
+    <div className="min-h-screen bg-gradient-red flex flex-col items-center justify-center px-5 py-8 text-white">
+      <div className="w-full max-w-[420px] flex flex-col gap-5 items-center text-center">
+        <div className="w-20 h-20 rounded-full bg-black border-4 border-brand shadow-[0_0_30px_rgba(225,29,72,0.4)] flex items-center justify-center animate-pulse-slow">
+          <Skull size={36} className="text-brand" />
         </div>
 
-        <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>
-          Start your {TRIAL_DAYS}-day free trial
-        </div>
-        <div style={{ color: COLORS.mutedText, fontSize: 14, marginTop: -12 }}>
-          Free for {TRIAL_DAYS} days, then $20 a month. Cancel any time before it ends and you are not
-          charged.
+        <div className="text-2xl font-black italic uppercase">Start your {TRIAL_DAYS}-day free trial</div>
+        <div className="text-gray-500 text-sm -mt-3">
+          Free for {TRIAL_DAYS} days, then $20 a month. Cancel any time before it ends and you are not charged.
         </div>
 
-        <div
-          style={{
-            width: '100%',
-            background: COLORS.surface,
-            border: `2px solid ${COLORS.cardBorder}`,
-            borderRadius: 14,
-            padding: '16px 18px',
-            textAlign: 'left',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-            <span style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>$20</span>
-            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.8px', color: COLORS.metaText }}>
-              PER MONTH, AFTER THE TRIAL
-            </span>
+        <div className="w-full bg-dark-card border-2 border-white/10 rounded-2xl p-4 text-left">
+          <div className="flex items-baseline justify-between">
+            <span className="text-2xl font-black italic">$20</span>
+            <span className="text-[11px] font-black tracking-wide text-brand">PER MONTH, AFTER THE TRIAL</span>
           </div>
 
-          <div style={{ marginTop: 10 }}>
+          <div className="mt-2.5">
             {FEATURES.map(f => (
-              <div
-                key={f}
-                className="mg-row"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 11,
-                  padding: '9px 0',
-                  borderBottom: `1px solid ${COLORS.gridLine}`,
-                }}
-              >
-                <div
-                  style={{
-                    width: 20,
-                    height: 20,
-                    flexShrink: 0,
-                    border: `2px solid ${COLORS.mutedBorder}`,
-                    borderRadius: 5,
-                    background: COLORS.doneFill,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 13,
-                    fontWeight: 800,
-                    color: COLORS.doneGlyph,
-                  }}
-                >
+              <div key={f} className="flex items-center gap-3 py-2.5 border-b border-white/5 last:border-0">
+                <div className="w-5 h-5 flex-shrink-0 border-2 border-brand/40 rounded-md bg-brand/10 flex items-center justify-center text-brand text-sm font-black">
                   ✓
                 </div>
-                <span style={{ fontSize: 14 }}>{f}</span>
+                <span className="text-sm">{f}</span>
               </div>
             ))}
           </div>
         </div>
 
         {error && (
-          <div
-            style={{
-              width: '100%',
-              background: COLORS.dangerFill,
-              border: `2px solid ${COLORS.danger}`,
-              borderRadius: 10,
-              padding: '10px 12px',
-              fontSize: 13,
-              color: COLORS.dangerText,
-              textAlign: 'left',
-            }}
-          >
+          <div className="w-full bg-red-950/60 border-2 border-red-500/60 rounded-xl px-3 py-2.5 text-sm text-red-200 text-left">
             {error}
           </div>
         )}
@@ -193,31 +95,17 @@ export const SubscriptionGate: React.FC = () => {
         <button
           onClick={handleBuy}
           disabled={loading}
-          style={{
-            width: '100%',
-            background: COLORS.ctaFill,
-            border: `2px solid ${COLORS.ink}`,
-            borderRadius: 10,
-            padding: 14,
-            fontFamily: DISPLAY_FONT,
-            fontWeight: 700,
-            fontSize: 15,
-            color: COLORS.ink,
-            cursor: loading ? 'default' : 'pointer',
-            opacity: loading ? 0.6 : 1,
-          }}
+          className="w-full py-3.5 rounded-xl bg-brand border-2 border-white text-white font-black uppercase tracking-widest disabled:opacity-60"
         >
           {loading ? 'Redirecting…' : `Start ${TRIAL_DAYS}-day free trial`}
         </button>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', marginTop: -8 }}>
-          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.8px', color: COLORS.metaText }}>
-            CARD REQUIRED · CANCEL ANY TIME · POWERED BY STRIPE
-          </span>
-          <button onClick={() => void refreshSubscription()} style={{ ...linkStyle, color: COLORS.ink, fontWeight: 700 }}>
+        <div className="flex flex-col gap-1.5 items-center -mt-2">
+          <span className="text-[11px] font-black tracking-wide text-brand">CARD REQUIRED · CANCEL ANY TIME · POWERED BY STRIPE</span>
+          <button onClick={() => void refreshSubscription()} className="text-white font-bold text-sm underline">
             I already subscribed — refresh
           </button>
-          <button onClick={() => void signOut()} style={{ ...linkStyle, color: COLORS.mutedText, fontSize: 12 }}>
+          <button onClick={() => void signOut()} className="text-gray-500 text-xs underline">
             Sign out ({user?.email})
           </button>
         </div>

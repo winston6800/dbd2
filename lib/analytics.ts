@@ -1,4 +1,4 @@
-import { supabase } from '../supabase';
+import { supabase } from './supabase';
 
 /**
  * Launch analytics.
@@ -18,15 +18,13 @@ export type AnalyticsEvent =
   | 'checkout_started'
   | 'trial_started'
   | 'subscription_active'
-  | 'goal_created'
-  | 'boss_added'
-  | 'task_added'
-  | 'task_completed'
-  | 'boss_defeated'
-  | 'goal_completed';
+  | 'loop_logged'
+  | 'honor_code_kept'
+  | 'group_created'
+  | 'person_followed';
 
-const SESSION_KEY = 'monsterGoalsSession';
-const ATTRIBUTION_KEY = 'monsterGoalsAttribution';
+const SESSION_KEY = 'dbdSession';
+const ATTRIBUTION_KEY = 'dbdAttribution';
 
 interface Attribution {
   referrer: string;

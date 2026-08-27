@@ -1,11 +1,10 @@
 # DeadByDefault
 
-A platform for rebuilding the self-respect years of internet defaulted out of you, reframed as a
-boss fight so it is actually fun to show up for. Name one big goal (the "monster"), break it into
-mini-bosses (sub-goals), and add tasks under the active mini-boss. Checking off a task deploys a
-"Milk" unit into orbit around the active boss, where it fires pellets forever. Each completed task
-takes 12 HP off the boss. At 0 HP the boss plays a defeat animation, drops into a faded graveyard
-trail, and the next sub-goal becomes active.
+A survival-style growth tracker for founders — Strava for the goal you keep avoiding. Log daily
+loops against a growth objective, keep the Honor Code by marking whether you actually shipped
+something, and watch the streak compound on a heatmap that does not forgive a gap. Follow other
+founders, start a group, and see their activity in a feed. Six tabs: **Command** (the daily loop),
+**Feed**, **Discover**, **Groups**, **Analytics**, and **Profile**.
 
 Access is gated: users must sign in **and** hold a subscription before they see the board. New users
 get a **3-day free trial**; a card is taken up front and charged $20/month when the trial ends unless
@@ -41,7 +40,7 @@ The gate lives in `index.tsx` and is deliberately hard — logged-out visitors g
 explains the product and states the price, then sign in, then start a trial, then the board:
 
 ```
-Landing → AuthScreen → SubscriptionGate → MonsterGoalsApp
+Landing → AuthScreen → SubscriptionGate → GrowthProtocolApp
 ```
 
 | Piece | File |
@@ -51,7 +50,7 @@ Landing → AuthScreen → SubscriptionGate → MonsterGoalsApp
 | Supabase client, entitlement + trial helpers | `lib/supabase.ts` |
 | Email/password sign in & sign up | `components/AuthScreen.tsx` |
 | Trial + $20/mo paywall | `components/SubscriptionGate.tsx` |
-| Trial countdown, cancel link, sign out | `components/MonsterGoals/AccountBar.tsx` |
+| Trial countdown, cancel link, sign out | `components/GrowthProtocol/AccountBar.tsx` |
 | Test/live credential resolution | `api/_stripe.ts` |
 | Stripe Checkout (`mode: subscription`, trial) | `api/create-checkout-session.ts` |
 | Stripe billing portal — where users cancel | `api/create-portal-session.ts` |
@@ -100,35 +99,28 @@ safe when it does.
 4. **Env** — set every variable in `.env.example`. `VITE_`-prefixed values ship in the browser bundle;
    the rest are server-only and must be set on the deployment (Vercel functions), never in the client.
 
-## Game code
+## App code
 
 | Piece | File |
 |---|---|
-| Root state, the core loop, persistence | `components/MonsterGoals/MonsterGoalsApp.tsx` |
-| Create Goal screen | `components/MonsterGoals/CreateGoalScreen.tsx` |
-| Battle board, bosses, connectors | `components/MonsterGoals/BattleBoard.tsx` |
-| Orbiting Milk units and pellets | `components/MonsterGoals/MilkUnit.tsx` |
-| Face variants | `components/MonsterGoals/MonsterFace.tsx` |
-| Task queue, add-task terminal bar | `components/MonsterGoals/TaskQueue.tsx`, `AddTaskBar.tsx` |
-| Board layout math | `lib/monster/layout.ts` |
-| Cloud sync (Supabase + local cache) | `lib/monster/sync.ts` |
-| Mobile board scaling | `components/MonsterGoals/BoardScaler.tsx` |
-| Monster name generation | `lib/monster/naming.ts` |
-| Design tokens | `lib/monster/tokens.ts` |
-| Keyframes | `styles/monsterGoals.css` |
+| Root state, the core loop, persistence | `components/GrowthProtocol/GrowthProtocolApp.tsx` |
+| Tab bar, header, account controls | `components/GrowthProtocol/Layout.tsx`, `AccountBar.tsx` |
+| Activity feed + kudos | `components/GrowthProtocol/FeedScreen.tsx` |
+| Discover founders to follow | `components/GrowthProtocol/DiscoveryScreen.tsx` |
+| Groups, following, join links | `components/GrowthProtocol/GroupsScreen.tsx` |
+| Streak math | `lib/growth/utils.ts` |
+| Per-user local storage (state, groups, following, kudos, challenges) | `lib/growth/storage.ts` |
+| Feed activity derivation | `lib/growth/feedUtils.ts` |
+| Types | `lib/growth/types.ts` |
 
-Every visual is pure CSS — border-radius blobs, clip-path teeth, absolutely positioned divs — plus one
-inline SVG for the connector lines. No images, no icon library. The only external asset is the Google
-Fonts stylesheet for Kalam and Nunito.
+Every visual is Tailwind utility classes on plain divs — no images beyond the favicon. Tailwind is a
+build-time dependency (`@tailwindcss/vite`, entry stylesheet `styles/tailwind.css`), not the runtime
+Play CDN the original prototype used — that CDN script is explicitly not meant for production. The
+palette (`brand` red `#E11D48`, near-black `dark`/`dark-card`/`dark-accent`) and the two custom
+keyframe animations live in `styles/tailwind.css`'s `@theme` block — change them there, not per
+component. The only external asset is the Google Fonts stylesheet for Inter.
 
-The palette is black and red: a near-black ground under a red bloom and a faint graph-paper grid, one
-vivid red (`#ff1f3d`) carrying every accent — monster faces, boss chain, CTAs, the terminal bar — and
-bright ink for type. Panels and inputs are outlined in a deeper red so the ink-bordered primary button
-stays the loudest thing on screen; the Milk cartons stay white on purpose, and take a dark outline
-(`cartonInk`) instead. Every hue lives in `lib/monster/tokens.ts` — change it there, not in the
-components. The geometry, radii and animation timings are still the handoff's.
-
-See [app.md](./app.md) for behaviour, and `lib/monster/tokens.ts` for the exact colours and radii.
+See [app.md](./app.md) for behaviour.
 
 ## Testing the subscription end to end
 
@@ -274,7 +266,7 @@ day, traffic sources, and how many accounts are trialing, paying, or cancelling.
 
 | Piece | File |
 |---|---|
-| Event capture (`track`, `trackOnce`) | `lib/monster/analytics.ts` |
+| Event capture (`track`, `trackOnce`) | `lib/analytics.ts` |
 | Dashboard | `components/Analytics/AnalyticsDashboard.tsx` |
 | Table, RLS and the summary function | `supabase/migrations/003_analytics.sql` |
 | Purchases + updated summary | `supabase/migrations/004_purchases.sql` |
@@ -304,16 +296,12 @@ Attribution is pinned at first contact and kept in `sessionStorage` — by the t
 - **3 days is short.** `customer.subscription.trial_will_end` fires ~3 days before the trial ends, so
   on a 3-day trial it lands almost immediately. The handler only logs it — if you want a "your trial
   ends tomorrow" email, that hook is where it goes, but the timing needs a longer trial to be useful.
-- **Mobile is scaled, not redesigned.** The board is a fixed 800×640 composition per the handoff, so
-  `BoardScaler` shrinks it as a unit — on a 390px phone that is roughly half size, and boss labels get
-  small. A proper mobile composition would need design input.
-- **AI monster naming is stubbed.** `aiMonsterName()` in `lib/monster/naming.ts` always returns
-  `null`, so the deterministic local name stands. Wire it to a provider to turn the feature on; the
-  UI already handles a name arriving late.
-- **One goal per account.** The data model holds a single goal, so the paywall and landing copy
-  deliberately promise "unlimited mini-bosses and tasks" rather than unlimited goals. Keep it that way
-  until multiple goals actually ship.
-- **No analytics.** Nothing measures how many landing-page visitors start checkout, which is the
-  number you will want on day one of a Reddit push.
-- **Auth, billing and landing screens are an extension.** The design handoff explicitly did not cover
-  them. They are built from the documented tokens but have not been through design review.
+- **Growth data is local-only.** Streaks, groups, following and kudos live in `localStorage`, scoped
+  per signed-in user id. It survives switching accounts on a shared device but not switching devices —
+  moving it to a Supabase table is the natural next step now that every session is authenticated.
+- **Groups and following work by link, not by account lookup.** Joining a group or following someone
+  encodes their whole state into a URL param; there is no server-side directory to search. Fine at
+  small scale, brittle if someone shares a stale link months later.
+- **The dev menu ships.** The seed-data / reset-my-data terminal button in the bottom-right corner is
+  visible to any signed-in user, not just admins — harmless (it only touches that user's own local
+  data) but worth gating before a public launch if it looks unpolished in front of customers.

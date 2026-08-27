@@ -1,37 +1,18 @@
 import React, { useState } from 'react';
+import { Skull } from 'lucide-react';
 import { useAuth } from '../lib/auth';
-import { ACTIVE_GLOW, BLOB_RADIUS, COLORS, DISPLAY_FONT, PAPER_BACKGROUND } from '../lib/monster/tokens';
-import { HeroFace } from './MonsterGoals/MonsterFace';
-import { track } from '../lib/monster/analytics';
+import { track } from '../lib/analytics';
 
 /**
- * The handoff explicitly does not cover authentication ("Not yet designed").
- * This screen is assembled from the documented design tokens so it reads as the
- * same product, but it is an extension — worth a designer's eye before launch.
+ * Auth is not part of the original Growth Protocol design — it is an
+ * extension, built from the same Tailwind tokens (brand red, near-black
+ * surfaces) so it reads as the same product.
  */
 
 type Mode = 'login' | 'signup';
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  background: COLORS.surface,
-  border: `2px solid ${COLORS.cardBorder}`,
-  borderRadius: 10,
-  padding: '12px 14px',
-  color: 'inherit',
-  fontSize: 15,
-};
-
-const pageStyle: React.CSSProperties = {
-  minHeight: '100vh',
-  ...PAPER_BACKGROUND,
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '32px 20px 60px',
-  color: COLORS.ink,
-};
+const inputClass =
+  'w-full bg-dark-card border-2 border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold placeholder:text-gray-600 outline-none focus:border-brand/50';
 
 export const AuthScreen: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { signIn, signUp } = useAuth();
@@ -66,36 +47,18 @@ export const AuthScreen: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
   if (signupDone) {
     return (
-      <div style={pageStyle}>
-        <div
-          style={{
-            width: '100%',
-            maxWidth: 420,
-            textAlign: 'center',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 14,
-            alignItems: 'center',
-          }}
-        >
-          <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>Check your email</div>
-          <div style={{ color: COLORS.mutedText, fontSize: 14 }}>
-            We sent a confirmation link to <strong>{email}</strong>. Click it to wake your monster.
+      <div className="min-h-screen bg-gradient-red flex flex-col items-center justify-center px-5 py-8 text-white">
+        <div className="w-full max-w-[420px] text-center flex flex-col gap-3.5 items-center">
+          <div className="text-2xl font-black italic uppercase">Check your email</div>
+          <div className="text-gray-500 text-sm">
+            We sent a confirmation link to <strong className="text-white">{email}</strong>. Click it to start your streak.
           </div>
           <button
             onClick={() => {
               setSignupDone(false);
               setMode('login');
             }}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: COLORS.mutedText,
-              fontSize: 13,
-              textDecoration: 'underline',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-            }}
+            className="text-gray-500 text-sm underline hover:text-brand"
           >
             Back to sign in
           </button>
@@ -105,73 +68,30 @@ export const AuthScreen: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   }
 
   return (
-    <div style={pageStyle}>
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          width: '100%',
-          maxWidth: 420,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 20,
-          alignItems: 'center',
-          textAlign: 'center',
-        }}
-      >
-        <div
-          style={{
-            width: 150,
-            height: 150,
-            borderRadius: BLOB_RADIUS,
-            background: COLORS.surface,
-            border: `3px solid ${COLORS.monsterInk}`,
-            boxShadow: ACTIVE_GLOW,
-            position: 'relative',
-            animation: 'floatIdleNoX 3.5s ease-in-out infinite',
-          }}
-        >
-          <HeroFace />
+    <div className="min-h-screen bg-gradient-red flex flex-col items-center justify-center px-5 py-8 text-white">
+      <form onSubmit={handleSubmit} className="w-full max-w-[420px] flex flex-col gap-5 items-center text-center">
+        <div className="w-24 h-24 rounded-full bg-black border-4 border-brand shadow-[0_0_30px_rgba(225,29,72,0.4)] flex items-center justify-center animate-pulse-slow">
+          <Skull size={44} className="text-brand" />
         </div>
 
-        <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>DeadByDefault</div>
-        <div style={{ color: COLORS.mutedText, fontSize: 14, marginTop: -12 }}>
-          {mode === 'login' ? 'Sign in to get back to the fight.' : 'Create an account and name the thing you have been avoiding.'}
+        <div className="text-2xl font-black italic uppercase tracking-tighter">DeadByDefault</div>
+        <div className="text-gray-500 text-sm -mt-3">
+          {mode === 'login' ? 'Sign in to get back to the grind.' : 'Create an account and name your growth objective.'}
         </div>
 
+        <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required className={inputClass} />
         <input
-          className="mg-input"
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          required
-          style={inputStyle}
-        />
-        <input
-          className="mg-input"
           type="password"
           placeholder="Password"
           value={password}
           onChange={e => setPassword(e.target.value)}
           required
           minLength={8}
-          style={{ ...inputStyle, marginTop: -12 }}
+          className={`${inputClass} -mt-3`}
         />
 
         {error && (
-          <div
-            style={{
-              width: '100%',
-              background: COLORS.dangerFill,
-              border: `2px solid ${COLORS.danger}`,
-              borderRadius: 10,
-              padding: '10px 12px',
-              fontSize: 13,
-              color: COLORS.dangerText,
-              textAlign: 'left',
-              marginTop: -12,
-            }}
-          >
+          <div className="w-full bg-red-950/60 border-2 border-red-500/60 rounded-xl px-3 py-2.5 text-sm text-red-200 text-left -mt-3">
             {error}
           </div>
         )}
@@ -179,24 +99,12 @@ export const AuthScreen: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         <button
           type="submit"
           disabled={loading}
-          style={{
-            width: '100%',
-            background: COLORS.ctaFill,
-            border: `2px solid ${COLORS.ink}`,
-            borderRadius: 10,
-            padding: 14,
-            fontFamily: DISPLAY_FONT,
-            fontWeight: 700,
-            fontSize: 15,
-            color: COLORS.ink,
-            cursor: loading ? 'default' : 'pointer',
-            opacity: loading ? 0.6 : 1,
-          }}
+          className="w-full py-3.5 rounded-xl bg-brand border-2 border-white text-white font-black uppercase tracking-widest disabled:opacity-60"
         >
           {loading ? 'One moment…' : mode === 'login' ? 'Sign In' : 'Create Account'}
         </button>
 
-        <div style={{ fontSize: 13, color: COLORS.mutedText, marginTop: -8 }}>
+        <div className="text-sm text-gray-500 -mt-2">
           {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
           <button
             type="button"
@@ -204,37 +112,14 @@ export const AuthScreen: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               setMode(mode === 'login' ? 'signup' : 'login');
               setError(null);
             }}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              color: COLORS.ink,
-              fontWeight: 700,
-              fontSize: 13,
-              textDecoration: 'underline',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-            }}
+            className="text-white font-bold underline"
           >
             {mode === 'login' ? 'Sign up' : 'Sign in'}
           </button>
         </div>
 
         {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              color: COLORS.metaText,
-              fontSize: 12,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              marginTop: -12,
-            }}
-          >
+          <button type="button" onClick={onBack} className="text-gray-600 text-xs -mt-3">
             ← What is this?
           </button>
         )}

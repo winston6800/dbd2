@@ -1,18 +1,6 @@
 import React, { useState } from 'react';
-import { COLORS } from '../../lib/monster/tokens';
 import { useAuth } from '../../lib/auth';
 import { isTrialing, trialDaysLeft } from '../../lib/supabase';
-
-const linkStyle: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  padding: 0,
-  fontSize: 11,
-  color: COLORS.mutedText,
-  cursor: 'pointer',
-  textDecoration: 'underline',
-  fontFamily: 'inherit',
-};
 
 /**
  * Whether to offer the analytics link. This is a separate list from
@@ -37,12 +25,12 @@ function canSeeAnalytics(email: string | undefined): boolean {
 }
 
 /**
- * Signed-in account controls.
+ * Signed-in account controls, shown in the header.
  *
  * The trial countdown is deliberately visible: the card is charged
  * automatically when the trial ends, so the user should never be surprised by
- * it. **Manage subscription** opens the Stripe billing portal, which is where
- * cancelling happens.
+ * it. **Manage** opens the Stripe billing portal, which is where cancelling
+ * happens.
  */
 export const AccountBar: React.FC<{ onOpenAnalytics?: () => void }> = ({ onOpenAnalytics }) => {
   const { user, session, subscription, signOut } = useAuth();
@@ -72,41 +60,27 @@ export const AccountBar: React.FC<{ onOpenAnalytics?: () => void }> = ({ onOpenA
   const cancelling = subscription?.cancel_at_period_end === true;
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        fontSize: 11,
-        color: COLORS.metaText,
-        flexWrap: 'wrap',
-        justifyContent: 'flex-end',
-      }}
-    >
-      {error && <span style={{ color: COLORS.danger }}>{error}</span>}
+    <div className="flex items-center flex-wrap justify-end gap-2 text-[10px]">
+      {error && <span className="text-red-400 font-bold">{error}</span>}
 
       {isTrialing(subscription) && (
-        <span style={{ fontWeight: 800, letterSpacing: '0.5px', color: COLORS.doneGlyph }}>
+        <span className="font-black tracking-wide text-brand">
           TRIAL · {daysLeft} DAY{daysLeft === 1 ? '' : 'S'} LEFT
         </span>
       )}
-      {cancelling && (
-        <span style={{ fontWeight: 800, letterSpacing: '0.5px' }}>CANCELS AT PERIOD END</span>
-      )}
-
-      <span>{user?.email}</span>
+      {cancelling && <span className="font-black tracking-wide text-gray-400">CANCELS AT PERIOD END</span>}
 
       {onOpenAnalytics && canSeeAnalytics(user?.email) && (
-        <button type="button" onClick={onOpenAnalytics} style={linkStyle}>
+        <button type="button" onClick={onOpenAnalytics} className="text-gray-500 underline hover:text-brand">
           Analytics
         </button>
       )}
       {subscription && (
-        <button type="button" onClick={openBillingPortal} disabled={busy} style={linkStyle}>
-          {busy ? 'Opening…' : 'Manage subscription'}
+        <button type="button" onClick={openBillingPortal} disabled={busy} className="text-gray-500 underline hover:text-brand">
+          {busy ? 'Opening…' : 'Manage'}
         </button>
       )}
-      <button type="button" onClick={() => void signOut()} style={linkStyle}>
+      <button type="button" onClick={() => void signOut()} className="text-gray-500 underline hover:text-brand">
         Sign out
       </button>
     </div>

@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+/* Design tokens carried over from the original Growth Protocol Tailwind CDN
+   config — black-and-red, one accent doing all the work. */
+@theme {
+  --color-brand: #e11d48;
+  --color-brand-light: #fb7185;
+  --color-brand-dark: #9f1239;
+  --color-dark: #000000;
+  --color-dark-card: #0a0a0a;
+  --color-dark-accent: #111111;
+
+  --animate-spin-slow: spin 8s linear infinite;
+  --animate-pulse-slow: pulse-custom 4s ease-in-out infinite;
+}
+
+@keyframes pulse-custom {
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(225, 29, 72, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(225, 29, 72, 0.4);
+  }
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #000000;
+  color: #ffffff;
+}
+
+.bg-gradient-red {
+  background: radial-gradient(circle at top, #1c0202 0%, #000000 100%);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e11d48;
+  border-radius: 10px;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.mask-fade-edges {
+  mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+}

@@ -1,35 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import './styles/monsterGoals.css';
+import './styles/tailwind.css';
 import { AuthProvider, useAuth } from './lib/auth';
 import { AuthScreen } from './components/AuthScreen';
 import { SubscriptionGate } from './components/SubscriptionGate';
 import { Landing } from './components/Landing';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { MonsterGoalsApp } from './components/MonsterGoals/MonsterGoalsApp';
-import { COLORS, PAPER_BACKGROUND } from './lib/monster/tokens';
-import { trackOnce } from './lib/monster/analytics';
+import { GrowthProtocolApp } from './components/GrowthProtocol/GrowthProtocolApp';
+import { trackOnce } from './lib/analytics';
 
 const Splash: React.FC<{ label: string }> = ({ label }) => (
-  <div
-    style={{
-      minHeight: '100vh',
-      ...PAPER_BACKGROUND,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: COLORS.mutedText,
-      fontSize: 14,
-    }}
-  >
-    {label}
-  </div>
+  <div className="min-h-screen bg-gradient-red flex items-center justify-center text-gray-500 text-sm">{label}</div>
 );
 
 /**
- * Hard gate: sign in, then start a trial, then the board. No part of the game is
- * reachable without both — logged-out visitors get the landing page, which
- * explains the product and states the price before asking for an email.
+ * Hard gate: sign in, then start a trial, then the app. No part of the
+ * product is reachable without both — logged-out visitors get the landing
+ * page, which explains it and states the price before asking for an email.
  */
 const AppGate: React.FC = () => {
   const { user, subscription, loading, subscriptionLoading, refreshSubscription } = useAuth();
@@ -51,7 +38,7 @@ const AppGate: React.FC = () => {
     if (subscription) trackOnce('trial_started');
   }, [subscription]);
 
-  if (loading) return <Splash label="Waking the monsters…" />;
+  if (loading) return <Splash label="Checking your credentials…" />;
 
   if (!user) {
     return showAuth ? (
@@ -67,13 +54,13 @@ const AppGate: React.FC = () => {
     .filter(Boolean);
   const isAdmin = !!user.email && adminEmails.includes(user.email.toLowerCase());
 
-  if (isAdmin) return <MonsterGoalsApp />;
+  if (isAdmin) return <GrowthProtocolApp />;
 
   if (subscriptionLoading) return <Splash label="Checking your access…" />;
 
   if (!subscription) return <SubscriptionGate />;
 
-  return <MonsterGoalsApp />;
+  return <GrowthProtocolApp />;
 };
 
 const rootElement = document.getElementById('root');

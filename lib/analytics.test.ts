@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const inserted: Record<string, unknown>[] = [];
 let rpcResult: { data: unknown; error: unknown } = { data: null, error: null };
 
-vi.mock('../supabase', () => ({
+vi.mock('./supabase', () => ({
   supabase: {
     from: () => ({
       insert: (row: Record<string, unknown>) => {
@@ -39,8 +39,8 @@ describe('track', () => {
   });
 
   it('passes props through', () => {
-    track('boss_added', { bossCount: 3 });
-    expect(inserted[0].props).toEqual({ bossCount: 3 });
+    track('loop_logged', { loopCount: 3 });
+    expect(inserted[0].props).toEqual({ loopCount: 3 });
   });
 
   it('pins attribution at first contact', () => {

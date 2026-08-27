@@ -1,55 +1,60 @@
 import React, { useEffect } from 'react';
-import { ACTIVE_GLOW, BLOB_RADIUS, COLORS, DISPLAY_FONT, PAPER_BACKGROUND } from '../lib/monster/tokens';
-import { track, trackOnce } from '../lib/monster/analytics';
-import { HeroFace, MonsterFace } from './MonsterGoals/MonsterFace';
-import { MilkUnit } from './MonsterGoals/MilkUnit';
+import { Skull, Home, Activity, Compass, Users, BarChart3, User, Check } from 'lucide-react';
+import { track, trackOnce } from '../lib/analytics';
 
 /**
  * The marketing surface for logged-out visitors.
  *
  * Cold traffic used to land straight on an email/password form with no
- * explanation of what the product is or that it costs money. This page explains
- * the loop, shows it running, and states the price before anyone signs up.
- *
- * Not part of the design handoff — assembled from the documented tokens.
+ * explanation of what the product is or that it costs money. This page
+ * explains the loop, previews the board, and states the price before anyone
+ * signs up.
  */
 
-const DEMO_H = 380;
+const TABS: { icon: React.ReactNode; label: string }[] = [
+  { icon: <Home size={16} />, label: 'Command' },
+  { icon: <Activity size={16} />, label: 'Feed' },
+  { icon: <Compass size={16} />, label: 'Discover' },
+  { icon: <Users size={16} />, label: 'Groups' },
+  { icon: <BarChart3 size={16} />, label: 'Analytics' },
+  { icon: <User size={16} />, label: 'Profile' },
+];
 
 const BEATS: { title: string; body: string }[] = [
   {
-    title: 'Name the thing you keep avoiding',
-    body: 'It becomes a monster with a name. Somehow that makes it harder to keep pretending it is not there.',
+    title: 'Name the objective you keep dodging',
+    body: '"Increase daily signups." "Ship the landing page." Whatever it is, it goes at the top of Command, in your face, every day.',
   },
   {
-    title: 'Break it into bosses',
-    body: 'Each sub-goal is a boss with 100 HP, chained between you and the thing you actually want.',
+    title: 'Log the loop, keep the vow',
+    body: 'Every unit of work moves the counter. Every day you actually shipped something gets an Honor Code check — no faking it, the streak knows.',
   },
   {
-    title: 'Deploy proof, not promises',
-    body: 'Every task you finish sends a Milk unit into orbit, where it fires on the boss forever. That is a receipt, not a vibe.',
+    title: 'Bring people into it',
+    body: 'Follow other founders, start a group, watch the Feed. Streaks are harder to fake and easier to keep when someone else can see them.',
   },
 ];
 
-const primaryButton: React.CSSProperties = {
-  background: COLORS.ctaFill,
-  border: `2px solid ${COLORS.ink}`,
-  boxShadow: '0 0 22px rgba(255, 31, 61, 0.45)',
-  borderRadius: 10,
-  padding: '14px 28px',
-  fontFamily: DISPLAY_FONT,
-  fontWeight: 700,
-  fontSize: 16,
-  color: COLORS.ink,
-  cursor: 'pointer',
-};
+// A static preview of the Command heatmap — same math as the real one, fixed
+// data, so cold traffic sees the actual product instead of a mockup.
+const DEMO_WEEK = [
+  { label: 'M', uvs: 4, shipped: true },
+  { label: 'T', uvs: 9, shipped: true },
+  { label: 'W', uvs: 0, shipped: false },
+  { label: 'T', uvs: 12, shipped: true },
+  { label: 'F', uvs: 6, shipped: true },
+  { label: 'S', uvs: 2, shipped: false },
+  { label: 'S', uvs: 15, shipped: true, today: true },
+];
 
-const card: React.CSSProperties = {
-  background: COLORS.surface,
-  border: `2px solid ${COLORS.cardBorder}`,
-  borderRadius: 14,
-  padding: '16px 18px',
-};
+function demoHeatColor(uvs: number): { bg: string; check: string } {
+  if (uvs === 0) return { bg: 'rgba(255,255,255,0.05)', check: '#fff' };
+  const ratio = Math.min(1, uvs / 15);
+  const r = 225 + (255 - 225) * ratio;
+  const g = 29 + (255 - 29) * ratio;
+  const b = 72 + (255 - 72) * ratio;
+  return { bg: `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`, check: ratio > 0.5 ? '#000' : '#fff' };
+}
 
 export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = ({ onStart, onSignIn }) => {
   useEffect(() => trackOnce('landing_view'), []);
@@ -60,177 +65,101 @@ export const Landing: React.FC<{ onStart: () => void; onSignIn: () => void }> = 
   };
 
   return (
-  <div
-    style={{
-      minHeight: '100vh',
-      ...PAPER_BACKGROUND,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      padding: '20px 20px 60px',
-      color: COLORS.ink,
-    }}
-  >
-    <div style={{ width: '100%', maxWidth: 800, display: 'flex', flexDirection: 'column', gap: 28 }}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <button
-          onClick={onSignIn}
-          style={{
-            background: 'none',
-            border: 'none',
-            padding: 0,
-            fontSize: 13,
-            fontWeight: 700,
-            color: COLORS.mutedText,
-            textDecoration: 'underline',
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-          }}
-        >
-          Sign in
-        </button>
-      </div>
-
-      {/* Hero */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, textAlign: 'center' }}>
-        <div
-          style={{
-            width: 130,
-            height: 130,
-            borderRadius: BLOB_RADIUS,
-            background: COLORS.surface,
-            border: `3px solid ${COLORS.monsterInk}`,
-            boxShadow: ACTIVE_GLOW,
-            position: 'relative',
-            animation: 'floatIdleNoX 3.5s ease-in-out infinite',
-          }}
-        >
-          <HeroFace />
+    <div className="min-h-screen bg-gradient-red flex flex-col items-center px-5 py-6 text-white">
+      <div className="w-full max-w-2xl flex flex-col gap-8">
+        <div className="flex justify-end">
+          <button onClick={onSignIn} className="text-sm font-bold text-gray-500 underline hover:text-brand">
+            Sign in
+          </button>
         </div>
-        <span
-          style={{
-            fontFamily: DISPLAY_FONT,
-            fontWeight: 700,
-            fontSize: 13,
-            letterSpacing: '2px',
-            color: COLORS.metaText,
-          }}
-        >
-          DEADBYDEFAULT
-        </span>
-        <h1
-          className="mg-hero-title"
-          style={{
-            fontFamily: DISPLAY_FONT,
-            fontWeight: 700,
-            margin: 0,
-            textShadow: '0 0 26px rgba(255, 31, 61, 0.45)',
-          }}
-        >
-          Built different isn't a personality. It's a default you have to overwrite.
-        </h1>
-        <p style={{ color: COLORS.mutedText, fontSize: 16, margin: 0, maxWidth: 560 }}>
-          Years of feeds built to keep you scrolling trained you to flake on yourself by default.
-          DeadByDefault is a goal tracker shaped like a boss fight — name the thing, break it down, and
-          every task you finish is proof stacking up against the version of you the internet talked you
-          into.
-        </p>
-        <button onClick={start} style={primaryButton}>
-          Start free trial
-        </button>
-        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.8px', color: COLORS.metaText }}>
-          3 DAYS FREE · THEN $20 / MONTH · CANCEL ANY TIME
-        </span>
-      </div>
 
-      {/* The loop, running */}
-      <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-        <div style={{ position: 'relative', height: DEMO_H, width: '100%' }}>
-          <div
-            style={{
-              position: 'absolute',
-              left: '50%',
-              top: DEMO_H / 2,
-              width: 120,
-              height: 120,
-              transform: 'translate(-50%, -50%)',
-              borderRadius: BLOB_RADIUS,
-              background: COLORS.surface,
-              border: `3px solid ${COLORS.monsterInk}`,
-              boxShadow: ACTIVE_GLOW,
-              zIndex: 3,
-            }}
-          >
-            <MonsterFace variant={0} />
+        {/* Hero */}
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="w-20 h-20 rounded-full bg-black border-4 border-brand shadow-[0_0_30px_rgba(225,29,72,0.4)] flex items-center justify-center animate-pulse-slow">
+            <Skull size={36} className="text-brand" />
           </div>
-          {['demo-a', 'demo-b', 'demo-c'].map((id, i) => (
-            <MilkUnit
-              key={id}
-              taskId={id}
-              text=""
-              index={i}
-              count={3}
-              bossX={50}
-              centerY={DEMO_H / 2}
-              showLabel={false}
-            />
+          <span className="text-xs font-black tracking-[3px] text-brand">DEADBYDEFAULT</span>
+          <h1 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter leading-tight">
+            Built different isn't a personality. It's a default you have to overwrite.
+          </h1>
+          <p className="text-gray-400 text-base max-w-lg">
+            Years of feeds built to keep you scrolling trained you to flake on yourself by default.
+            DeadByDefault is a survival-style growth tracker for founders — Strava for the goal you keep
+            avoiding. Log the loop, keep the vow, watch the streak compound.
+          </p>
+          <button onClick={start} className="px-7 py-3.5 rounded-xl bg-brand border-2 border-white font-black uppercase tracking-widest shadow-[0_0_22px_rgba(225,29,72,0.45)]">
+            Start free trial
+          </button>
+          <span className="text-[11px] font-black tracking-wide text-brand">3 DAYS FREE · THEN $20 / MONTH · CANCEL ANY TIME</span>
+        </div>
+
+        {/* Command preview */}
+        <div className="bg-dark-card border-2 border-white/10 rounded-3xl p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black uppercase tracking-widest text-brand">Survival Pulse</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-600">Growth Heatmap</span>
+          </div>
+          <div className="grid grid-cols-7 gap-2 p-3 bg-black/40 rounded-2xl border border-white/5">
+            {DEMO_WEEK.map((d, i) => {
+              const { bg, check } = demoHeatColor(d.uvs);
+              return (
+                <div key={i} className="flex flex-col items-center space-y-1.5">
+                  <span className={`text-[8px] font-black uppercase ${d.today ? 'text-brand' : 'text-gray-600'}`}>{d.label}</span>
+                  <div
+                    className={`w-full aspect-square rounded-lg flex items-center justify-center relative ${d.today ? 'ring-2 ring-brand' : ''}`}
+                    style={{ backgroundColor: bg }}
+                  >
+                    {d.shipped && <Check className="absolute -top-1 -right-1" style={{ color: check }} size={10} strokeWidth={4} />}
+                    {d.uvs > 0 && <span className="text-[10px] font-black tabular-nums" style={{ color: check }}>{d.uvs}</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-center text-xs text-gray-500">Seven days, seven honest check-ins, one streak that does not lie.</p>
+        </div>
+
+        {/* Six tabs — the whole app, not one screen */}
+        <div className="flex flex-wrap justify-center gap-2">
+          {TABS.map(t => (
+            <div key={t.label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-dark-card border border-white/10 text-gray-400 text-xs font-bold">
+              <span className="text-brand">{t.icon}</span>
+              {t.label}
+            </div>
           ))}
         </div>
-        <div
-          style={{
-            borderTop: `1px solid ${COLORS.gridLine}`,
-            padding: '12px 18px',
-            fontSize: 12,
-            color: COLORS.mutedText,
-            textAlign: 'center',
-          }}
-        >
-          Three finished tasks, three units of proof, one boss having a bad day.
-        </div>
-      </div>
 
-      {/* How it works */}
-      <div className="mg-landing-beats">
-        {BEATS.map((b, i) => (
-          <div key={b.title} style={card}>
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 800,
-                letterSpacing: '1px',
-                color: COLORS.metaText,
-                marginBottom: 6,
-              }}
-            >
-              STEP {i + 1}
+        {/* How it works */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {BEATS.map((b, i) => (
+            <div key={b.title} className="bg-dark-card border-2 border-white/10 rounded-2xl p-4">
+              <div className="text-[10px] font-black tracking-widest text-brand mb-1.5">STEP {i + 1}</div>
+              <div className="font-black text-base mb-1.5">{b.title}</div>
+              <div className="text-gray-500 text-sm leading-relaxed">{b.body}</div>
             </div>
-            <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 17, marginBottom: 6 }}>{b.title}</div>
-            <div style={{ fontSize: 13, color: COLORS.mutedText, lineHeight: 1.45 }}>{b.body}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Price */}
-      <div style={{ ...card, textAlign: 'center' }}>
-        <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 24 }}>3 days free, then $20/mo</div>
-        <div style={{ fontSize: 13, color: COLORS.mutedText, marginTop: 4, marginBottom: 14 }}>
-          Try it for three days without paying. We take a card up front so it keeps working when the
-          trial ends — cancel before then and you are not charged, and cancelling later takes two
-          clicks. Unlimited bosses and tasks, synced across your devices, still nagging you back toward
-          the person you already know you can be.
+          ))}
         </div>
-        <button onClick={start} style={primaryButton}>
-          Start your fight
-        </button>
-      </div>
 
-      <div style={{ textAlign: 'center', fontSize: 12, color: COLORS.metaText }}>
-        Years of the internet trained you to flake on yourself by default. This is where you stop.
-      </div>
-      <div style={{ textAlign: 'center', fontSize: 12, color: COLORS.metaText }}>
-        If your dream is working at Amazon, Google, Microsoft, or OpenAI for the money — go fuck yourself, and GTFO.
+        {/* Price */}
+        <div className="bg-dark-card border-2 border-white/10 rounded-2xl p-6 text-center">
+          <div className="text-2xl font-black italic">3 days free, then $20/mo</div>
+          <div className="text-gray-500 text-sm mt-1 mb-4">
+            Try it for three days without paying. We take a card up front so it keeps working when the
+            trial ends — cancel before then and you are not charged, and cancelling later takes two
+            clicks. Unlimited groups and following, synced across your devices.
+          </div>
+          <button onClick={start} className="px-7 py-3.5 rounded-xl bg-brand border-2 border-white font-black uppercase tracking-widest">
+            Start your streak
+          </button>
+        </div>
+
+        <div className="text-center text-xs text-brand/80">
+          Years of the internet trained you to flake on yourself by default. This is where you stop.
+        </div>
+        <div className="text-center text-xs text-brand/80">
+          If your dream is working at Amazon, Google, Microsoft, or OpenAI for the money — go fuck yourself, and GTFO.
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 };
