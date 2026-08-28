@@ -122,6 +122,31 @@ component. The only external asset is the Google Fonts stylesheet for Inter.
 
 See [app.md](./app.md) for behaviour.
 
+## Screen time tracking
+
+A companion browser extension (`extension/`, Manifest V3, Chrome/Edge) tracks time actually spent
+watching YouTube or Twitch — active tab, focused window, system not idle — and reports it into the
+Command tab's **Screen Time Today** card. It is not published to a web store; load it unpacked. See
+[extension/README.md](./extension/README.md) for install steps.
+
+| Piece | File |
+|---|---|
+| Extension: tracking + sync heartbeat | `extension/background.js` |
+| Extension: popup (today's minutes, pairing) | `extension/popup.html`, `popup.js` |
+| Sync-token generation (Profile tab) | `lib/growth/screenTime.ts` |
+| Today's totals card (Command tab) | `components/GrowthProtocol/ScreenTimeCard.tsx` |
+| Pairing-code card (Profile tab) | `components/GrowthProtocol/ScreenTimeSyncCard.tsx` |
+| Write endpoint, authenticated by sync token | `api/track-watch-time.ts` |
+| `sync_tokens` + `watch_time` tables, RLS, atomic increment | `supabase/migrations/006_watch_time.sql` |
+
+The extension has no Supabase session of its own — a background service worker can't sign in
+interactively — so it authenticates with an opaque per-account token instead of a JWT. The token is
+generated and read entirely client-side against `sync_tokens` (RLS scopes it to `auth.uid()`, no
+server endpoint needed); `/api/track-watch-time` looks it up with the service role key to learn whose
+`watch_time` row to increment, the same "never trust an id from the request, verify identity first"
+pattern the checkout and billing-portal endpoints use for Supabase sessions. Regenerating the code
+from Profile immediately disconnects whatever old copy of the extension was using it.
+
 ## Testing the subscription end to end
 
 The automated suite (`api/stripe-webhook.test.ts`) drives the handler through the whole lifecycle
@@ -302,6 +327,11 @@ Attribution is pinned at first contact and kept in `sessionStorage` — by the t
 - **Groups and following work by link, not by account lookup.** Joining a group or following someone
   encodes their whole state into a URL param; there is no server-side directory to search. Fine at
   small scale, brittle if someone shares a stale link months later.
+- **Screen time needs the extension loaded unpacked.** It is not published to the Chrome Web Store,
+  so every device has to clone the repo and load `extension/` manually — see its README. It is also
+  Chrome/Edge (Manifest V3) only; no Firefox/Safari build.
+- **The sync token has no expiry or rotation reminder.** Regenerating it from Profile is the only way
+  to revoke a copy of the extension (an old laptop, say); nothing prompts a user to do that.
 - **The dev menu ships.** The seed-data / reset-my-data terminal button in the bottom-right corner is
   visible to any signed-in user, not just admins — harmless (it only touches that user's own local
   data) but worth gating before a public launch if it looks unpolished in front of customers.

@@ -23,6 +23,8 @@ import { GroupsScreen } from './GroupsScreen';
 import { FeedScreen } from './FeedScreen';
 import { DiscoveryScreen } from './DiscoveryScreen';
 import { AnalyticsDashboard } from '../Analytics/AnalyticsDashboard';
+import { ScreenTimeCard } from './ScreenTimeCard';
+import { ScreenTimeSyncCard } from './ScreenTimeSyncCard';
 import { track } from '../../lib/analytics';
 import { useAuth } from '../../lib/auth';
 import { RefreshCw, X, Flame, Calendar, Award, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, Coffee, Moon, ArrowUp, Edit3, Globe, Zap, UserPlus, Copy, Trophy } from 'lucide-react';
@@ -649,6 +651,8 @@ const BaseHub: React.FC<{
         </div>
       </div>
 
+      <ScreenTimeCard userId={userId} />
+
       <ChallengesBlock userId={userId} userState={userState} />
 
       <div className="flex justify-center pt-2">
@@ -891,6 +895,9 @@ const ProfileScreen: React.FC<{ userId: string | null | undefined; userState: Us
           <p className="text-[9px] text-gray-500 mt-1">Share this link so others can follow your progress</p>
         </div>
       </div>
+
+      <ScreenTimeSyncCard userId={userId} />
+
       <div className="flex flex-col">
         <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">Field Analytics</h2>
         <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mt-1">Consistency & Retention Metrics</p>

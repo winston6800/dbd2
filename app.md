@@ -39,6 +39,9 @@ The daily loop, and where every session starts.
 - **Growth Terminal** — +/- buttons logging today's loop count, and the **Honor Code Entry** button:
   a confirmation modal asking whether the user actually shipped something today, with an optional
   note. Marking it kept (or later revoking it) recalculates the streak immediately.
+- **Screen Time Today** — today's YouTube and Twitch minutes, reported automatically by the
+  companion browser extension (`extension/`) rather than typed in. Polls every 30 seconds; shows
+  "Nothing synced yet" until the extension is installed and paired via the code on Profile.
 - **Weekly Challenges** — three fixed challenges reset every Monday: ship 5 days, log 50 loops,
   reach a 7-day streak. Progress bars only; no reward beyond seeing it fill.
 - **Take a Break** — toggles maintenance mode for today, which does not break the streak but greys
@@ -66,8 +69,10 @@ that one is business metrics (signups, funnel, MRR), this one is the user's own 
 
 ### Profile
 Display name (editable, used everywhere the person appears to others) and a **Copy follow link**
-button. Below that, the same heatmap as Command but zoomable: Week / Month / Year / All, with a year
-picker for the "All" view.
+button. Below that, **Screen Time Sync**: a per-account pairing code for the browser extension, with
+a copy button and a regenerate button (regenerating disconnects whatever old copy of the extension
+was using the previous code). Below that, the same heatmap as Command but zoomable: Week / Month /
+Year / All, with a year picker for the "All" view.
 
 ## Interactions
 

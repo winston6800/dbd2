@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>DeadByDefault Screen Time</title>
+    <style>
+      body {
+        width: 280px;
+        margin: 0;
+        padding: 16px;
+        background: #000;
+        color: #fff;
+        font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+      }
+      h1 {
+        font-size: 13px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #e11d48;
+        margin: 0 0 12px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #0a0a0a;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+      }
+      .row .label {
+        font-size: 11px;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .row .value {
+        font-size: 16px;
+        font-weight: 900;
+        font-style: italic;
+      }
+      .status {
+        font-size: 11px;
+        margin: 10px 0;
+        padding: 8px 10px;
+        border-radius: 8px;
+      }
+      .status.connected {
+        background: rgba(225, 29, 72, 0.12);
+        color: #fb7185;
+      }
+      .status.disconnected {
+        background: rgba(255, 255, 255, 0.06);
+        color: #9ca3af;
+      }
+      label {
+        display: block;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #9ca3af;
+        margin: 10px 0 4px;
+      }
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        background: #0a0a0a;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        padding: 8px 10px;
+        color: #fff;
+        font-size: 12px;
+      }
+      button {
+        width: 100%;
+        margin-top: 12px;
+        padding: 10px;
+        background: #e11d48;
+        border: none;
+        border-radius: 8px;
+        color: #fff;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 11px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #9f1239;
+      }
+      .saved {
+        font-size: 10px;
+        color: #34d399;
+        text-align: center;
+        margin-top: 6px;
+        height: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>DeadByDefault</h1>
+
+    <div class="row">
+      <span class="label">YouTube</span>
+      <span class="value" id="youtube-time">0m</span>
+    </div>
+    <div class="row">
+      <span class="label">Twitch</span>
+      <span class="value" id="twitch-time">0m</span>
+    </div>
+
+    <div id="status" class="status disconnected">Not connected</div>
+
+    <label for="api-base">API base URL</label>
+    <input id="api-base" type="text" placeholder="https://deadbydefault.app" />
+
+    <label for="sync-token">Sync code (from Profile)</label>
+    <input id="sync-token" type="text" placeholder="Paste your code" />
+
+    <button id="save">Save</button>
+    <div class="saved" id="saved-msg"></div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
