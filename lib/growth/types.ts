@@ -30,6 +30,7 @@ export interface UserState {
   dailyInfrastructureFocus: Record<string, boolean>;
   dailyShipped: Record<string, boolean>; // Honor code checkmarks
   dailyShipNote?: Record<string, string>; // Optional "what did you ship" note
+  journalEntries?: Record<string, string>; // Self-respect journal, keyed by date
   stats: UserStats;
   achievements: Achievement[];
   currentUvs: number;
@@ -88,6 +89,6 @@ export enum AppScreen {
   FEED = 'FEED',
   GROUPS = 'GROUPS',
   DISCOVER = 'DISCOVER',
-  ACHIEVEMENTS = 'ACHIEVEMENTS',
+  JOURNAL = 'JOURNAL',
   PROFILE = 'PROFILE',
 }

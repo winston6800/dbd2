@@ -62,11 +62,12 @@ Create a group to get a shareable join link (`?join=<base64>`); anyone who opens
 joins with a live-updating snapshot of their state. Also lists who you follow (via a similar
 `?follow=<base64>` link from their Profile tab), with an unfollow control.
 
-### Analytics (Achievements)
-Read-only stats: total loops, streak, average daily loops, "conversion resilience", and four
-survival milestones (3-day streak, 7-day streak, 10,000 total loops, 30 morning logs) with progress
-bars. Not to be confused with the admin analytics dashboard behind the header's **Analytics** link —
-that one is business metrics (signups, funnel, MRR), this one is the user's own game stats.
+### Journal
+The Self Respect Journal: one free-text entry per day answering "what did you do today that you give
+yourself self respect for?" Today's entry autosaves on blur (or the Save button); past entries are
+read-only, newest first — editing history isn't supported, same as growth data elsewhere. Not to be
+confused with the admin analytics dashboard behind the header's **Analytics** link, which is unrelated
+business metrics (signups, funnel, MRR) and still lives there for admins.
 
 ### Profile
 Display name (editable, used everywhere the person appears to others) and a **Copy follow link**
@@ -97,14 +98,14 @@ responsive classes give for free.
 ## State
 
 ```
-UserState: { defaultKpi, websiteUrl?, growthObjective?, streak, growthDates[], dailyUvs, dailyGrowthActions,
-             dailyInfrastructureFocus, dailyShipped, dailyShipNote?, stats, achievements[], currentUvs,
-             isOnMaintenance, minThreshold }
+UserState: { defaultKpi, websiteUrl?, growthObjective?, heatmapTheme?, streak, growthDates[], dailyUvs,
+             dailyGrowthActions, dailyInfrastructureFocus, dailyShipped, dailyShipNote?, journalEntries?,
+             stats, achievements[], currentUvs, isOnMaintenance, minThreshold }
 ```
 
 Persisted to `localStorage` under `dbd_state_v1:<userId>` after every change and restored on mount.
 Groups (`dbd_groups_v2:<userId>`), following (`dbd_following_v1:<userId>`), kudos
-(`dbd_kudos_v1:<userId>`), challenges (`dbd_challenges_v1:<userId>`), the discovery link list
+(`dbd_kudos_v1:<userId>`), the discovery link list
 (`dbd_discovery_list_v1:<userId>`), and the display name (`dbd_display_name:<userId>`) are separate
 keys, all scoped the same way — switching accounts on a shared device never leaks one person's data
 into another's. See `lib/growth/storage.ts`.

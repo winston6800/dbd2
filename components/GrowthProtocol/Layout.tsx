@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, BarChart3, User, Skull, Users, Activity, Compass } from 'lucide-react';
+import { Home, BookHeart, User, Skull, Users, Activity, Compass } from 'lucide-react';
 import { AppScreen } from '../../lib/growth/types';
 import { AccountBar } from './AccountBar';
 
@@ -55,10 +55,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeScreen, onNavigate, onO
           label="Groups"
         />
         <NavButton
-          active={activeScreen === AppScreen.ACHIEVEMENTS}
-          onClick={() => onNavigate(AppScreen.ACHIEVEMENTS)}
-          icon={<BarChart3 size={20} />}
-          label="Analytics"
+          active={activeScreen === AppScreen.JOURNAL}
+          onClick={() => onNavigate(AppScreen.JOURNAL)}
+          icon={<BookHeart size={20} />}
+          label="Journal"
         />
         <NavButton
           active={activeScreen === AppScreen.PROFILE}

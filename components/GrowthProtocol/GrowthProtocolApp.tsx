@@ -25,7 +25,7 @@ import { ScreenTimeCard } from './ScreenTimeCard';
 import { ScreenTimeSyncCard } from './ScreenTimeSyncCard';
 import { track } from '../../lib/analytics';
 import { useAuth } from '../../lib/auth';
-import { RefreshCw, X, Flame, Calendar, Award, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, Coffee, Moon, ArrowUp, Edit3, Globe, Zap, UserPlus, Copy } from 'lucide-react';
+import { RefreshCw, X, Flame, Calendar, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, Coffee, Moon, ArrowUp, Edit3, Globe, Zap, UserPlus, Copy, Heart } from 'lucide-react';
 import { HEATMAP_THEMES, getHeatmapTheme, rgbCss } from '../../lib/growth/themes';
 
 const getHeatmapColor = (uvs: number, isFocus: boolean | undefined, isShipped: boolean | undefined, themeRgb: [number, number, number]) => {
@@ -210,6 +210,15 @@ export const GrowthProtocolApp: React.FC = () => {
     setUserState(prev => ({ ...prev, heatmapTheme: themeId }));
   };
 
+  const saveJournalEntry = (date: string, text: string) => {
+    setUserState(prev => {
+      const entries = { ...prev.journalEntries };
+      if (text.trim()) entries[date] = text;
+      else delete entries[date];
+      return { ...prev, journalEntries: entries };
+    });
+  };
+
   const simulateData = (daysCount: number) => {
     const datesToAdd: string[] = [];
     const uvsToAdd: Record<string, number> = {};
@@ -312,8 +321,8 @@ export const GrowthProtocolApp: React.FC = () => {
             currentUserState={userState}
           />
         )}
-        {screen === AppScreen.ACHIEVEMENTS && (
-          <AchievementsDashboard userState={userState} />
+        {screen === AppScreen.JOURNAL && (
+          <SelfRespectJournal userState={userState} onSaveEntry={saveJournalEntry} />
         )}
         {screen === AppScreen.PROFILE && (
           <ProfileScreen userId={userId} userState={userState} />
@@ -736,39 +745,75 @@ const BaseHub: React.FC<{
   );
 };
 
-const AchievementsDashboard: React.FC<{ userState: UserState }> = ({ userState }) => {
-  const stats = userState.stats;
+const SelfRespectJournal: React.FC<{ userState: UserState; onSaveEntry: (date: string, text: string) => void }> = ({ userState, onSaveEntry }) => {
+  const today = new Date().toLocaleDateString('en-CA');
+  const entries = userState.journalEntries || {};
+  const [draft, setDraft] = useState(entries[today] || '');
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setDraft(entries[today] || '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [today]);
+
+  const commit = () => {
+    onSaveEntry(today, draft);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  };
+
+  const pastEntries = Object.entries(entries)
+    .filter(([date]) => date !== today)
+    .sort(([a], [b]) => (a < b ? 1 : -1));
 
   return (
     <div className="space-y-8 pb-20 animate-in slide-in-from-bottom-4">
       <div className="flex flex-col">
-        <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase">Acquisition Stats</h2>
-        <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Growth Velocity Metrics</p>
+        <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase">Self Respect Journal</h2>
+        <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">
+          What did you do today that you give yourself self respect for?
+        </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <StatCard icon={<Globe className="text-brand" size={18} />} label="Total Units" value={stats.totalUniqueVisitors.toLocaleString()} desc="Lifetime Traffic" />
-        <StatCard icon={<Flame className="text-brand" size={18} />} label="Streak" value={userState.streak} desc="Active Survival" />
-        <StatCard icon={<Target className="text-brand" size={18} />} label="Avg Daily" value={stats.avgUvPerDay} desc="Acq Velocity" />
-        <StatCard icon={<TrendingUp className="text-brand" size={18} />} label="Conv Rate" value={`${stats.conversionResilience}%`} desc="Efficiency" />
+      <div className="bg-dark-card border border-brand/20 rounded-3xl p-5 space-y-3">
+        <div className="flex items-center space-x-2 text-brand">
+          <Heart size={14} />
+          <span className="text-[10px] font-black uppercase tracking-widest">Today</span>
+        </div>
+        <textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          placeholder="Write what you did today that earned your own respect..."
+          rows={5}
+          className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-medium placeholder:text-gray-600 outline-none focus:border-brand/50 resize-none"
+        />
+        <div className="flex items-center justify-between">
+          <button
+            onClick={commit}
+            className="px-4 py-2 bg-brand text-white font-black uppercase tracking-widest text-[10px] rounded-xl shadow-lg"
+          >
+            Save
+          </button>
+          {saved && <span className="text-[10px] text-brand font-bold uppercase tracking-widest">Saved</span>}
+        </div>
       </div>
 
       <div className="space-y-4">
         <h3 className="text-brand font-black text-xs uppercase px-1 tracking-widest flex items-center space-x-2">
-          <Award size={14} />
-          <span>Survival Milestones</span>
+          <History size={14} />
+          <span>Past Entries</span>
         </h3>
+        {pastEntries.length === 0 && (
+          <p className="text-[11px] text-gray-600 px-1">Nothing here yet — today's entry is the first page.</p>
+        )}
         <div className="space-y-3">
-          {userState.achievements.map(ach => (
-            <div key={ach.id} className={`p-5 rounded-3xl border transition-all ${ach.unlocked ? 'bg-dark-card border-brand/40 shadow-xl' : 'bg-black border-white/5 opacity-50'}`}>
-              <div className="flex items-center space-x-4">
-                <div className={`text-3xl w-14 h-14 flex items-center justify-center rounded-2xl bg-black border ${ach.unlocked ? 'border-brand shadow-md' : 'border-gray-800'}`}>{ach.icon}</div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-center mb-1"><h4 className="font-black text-white uppercase text-sm italic">{ach.title}</h4><span className="text-[10px] font-bold text-brand/80">{ach.progress}/{ach.target}</span></div>
-                  <p className="text-[10px] text-gray-500 font-medium mb-3">{ach.description}</p>
-                  <div className="w-full h-1 bg-black rounded-full overflow-hidden border border-white/5"><div className={`h-full transition-all duration-1000 ${ach.unlocked ? 'bg-brand' : 'bg-gray-800'}`} style={{ width: `${Math.min(100, (ach.progress / ach.target) * 100)}%` }}></div></div>
-                </div>
+          {pastEntries.map(([date, text]) => (
+            <div key={date} className="p-5 rounded-3xl border border-white/5 bg-black">
+              <div className="text-[10px] font-black text-brand/80 uppercase tracking-widest mb-2">
+                {new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </div>
+              <p className="text-sm text-gray-300 font-medium whitespace-pre-wrap">{text}</p>
             </div>
           ))}
         </div>
