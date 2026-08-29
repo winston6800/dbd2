@@ -31,11 +31,14 @@ Six tabs, `Layout.tsx`'s nav bar:
 ### Command
 The daily loop, and where every session starts.
 
-- **Survival Pulse** — a 7-day heatmap. Each cell is a day; colour interpolates from black-on-red at
-  low volume to white-hot at high volume, with a checkmark overlay on days the Honor Code was kept.
-  Today's cell gets a red ring.
-- **Growth Objective** — an editable one-line goal (e.g. "INCREASE DAILY UNIQUE VISITORS"), plus an
-  optional website link. Click either to edit in place.
+- **Growth Objective + Survival Pulse** — one combined card. An editable one-line goal (e.g.
+  "INCREASE DAILY UNIQUE VISITORS", click to edit) sits above a 7-day heatmap; color interpolates
+  from the chosen theme color at low volume to white-hot at high volume, with a checkmark overlay on
+  days the Honor Code was kept and today's cell ringed in the theme color. Six color-theme swatches
+  (top right of the card, `lib/growth/themes.ts`) recolor the streak badge, the "Growth Objective"
+  label, and the heatmap together — pick one to represent whatever this objective is, so a different
+  goal can look different. Hovering the card shows the objective name as a tooltip. An optional
+  website link sits below the heatmap.
 - **Growth Terminal** — +/- buttons logging today's loop count, and the **Honor Code Entry** button:
   a confirmation modal asking whether the user actually shipped something today, with an optional
   note. Marking it kept (or later revoking it) recalculates the streak immediately.

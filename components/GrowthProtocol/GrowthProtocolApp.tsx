@@ -26,17 +26,19 @@ import { ScreenTimeSyncCard } from './ScreenTimeSyncCard';
 import { track } from '../../lib/analytics';
 import { useAuth } from '../../lib/auth';
 import { RefreshCw, X, Flame, Calendar, Award, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, Coffee, Moon, ArrowUp, Edit3, Globe, Zap, UserPlus, Copy } from 'lucide-react';
+import { HEATMAP_THEMES, getHeatmapTheme, rgbCss } from '../../lib/growth/themes';
 
-const getHeatmapColor = (uvs: number, isFocus?: boolean, isShipped?: boolean) => {
+const getHeatmapColor = (uvs: number, isFocus: boolean | undefined, isShipped: boolean | undefined, themeRgb: [number, number, number]) => {
   if (isFocus) return { backgroundColor: 'rgb(49, 46, 129)', border: '1px solid rgba(79, 70, 229, 0.4)', color: '#fff' };
   if (uvs === 0 && !isShipped) return { backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' };
 
   const maxIntensityVal = 15;
   const ratio = Math.min(1, uvs / maxIntensityVal);
 
-  const r = 225 + (255 - 225) * ratio;
-  const g = 29 + (255 - 29) * ratio;
-  const b = 72 + (255 - 72) * ratio;
+  const [baseR, baseG, baseB] = themeRgb;
+  const r = baseR + (255 - baseR) * ratio;
+  const g = baseG + (255 - baseG) * ratio;
+  const b = baseB + (255 - baseB) * ratio;
 
   const bgColor = `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
   const textColor = ratio > 0.5 ? '#000' : '#fff';
@@ -49,20 +51,24 @@ const getHeatmapColor = (uvs: number, isFocus?: boolean, isShipped?: boolean) =>
   };
 };
 
-const FrequencyMap: React.FC<{ data: { date: string, uvs: number, isFocus: boolean, isShipped: boolean, isToday?: boolean }[], columns?: number }> = ({ data, columns = 7 }) => (
+const FrequencyMap: React.FC<{
+  data: { date: string, uvs: number, isFocus: boolean, isShipped: boolean, isToday?: boolean }[],
+  columns?: number,
+  themeRgb: [number, number, number],
+}> = ({ data, columns = 7, themeRgb }) => (
   <div className={`grid gap-2`} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
     {data.map((day, idx) => (
       <div
         key={idx}
-        className={`aspect-square rounded-lg transition-all duration-300 flex items-center justify-center relative overflow-hidden ${day.isToday ? 'ring-2 ring-brand animate-pulse-slow' : ''}`}
-        style={getHeatmapColor(day.uvs, day.isFocus, day.isShipped)}
+        className={`aspect-square rounded-lg transition-all duration-300 flex items-center justify-center relative overflow-hidden ${day.isToday ? 'animate-pulse-slow' : ''}`}
+        style={{ ...getHeatmapColor(day.uvs, day.isFocus, day.isShipped, themeRgb), ...(day.isToday ? { boxShadow: `0 0 0 2px ${rgbCss(themeRgb)}` } : {}) }}
       >
         {day.isFocus ? (
           <Coffee size={12} className="text-indigo-200" />
         ) : (
           <div className="flex flex-col items-center justify-center">
             {day.isShipped && (
-              <Check className={`absolute top-0.5 right-0.5 ${getHeatmapColor(day.uvs, day.isFocus, day.isShipped).color === '#000' ? 'text-black' : 'text-white'}`} size={8} strokeWidth={4} />
+              <Check className={`absolute top-0.5 right-0.5 ${getHeatmapColor(day.uvs, day.isFocus, day.isShipped, themeRgb).color === '#000' ? 'text-black' : 'text-white'}`} size={8} strokeWidth={4} />
             )}
             {day.uvs > 0 && <span className="text-[11px] font-black tabular-nums tracking-tighter leading-none">{day.uvs}</span>}
             {day.uvs === 0 && day.isShipped && <Check size={14} strokeWidth={4} />}
@@ -200,6 +206,10 @@ export const GrowthProtocolApp: React.FC = () => {
     setUserState(prev => ({ ...prev, growthObjective: objective }));
   };
 
+  const updateHeatmapTheme = (themeId: string) => {
+    setUserState(prev => ({ ...prev, heatmapTheme: themeId }));
+  };
+
   const simulateData = (daysCount: number) => {
     const datesToAdd: string[] = [];
     const uvsToAdd: Record<string, number> = {};
@@ -262,6 +272,7 @@ export const GrowthProtocolApp: React.FC = () => {
             onSetHonorVow={handleSetHonorVow}
             onUpdateWebsite={updateWebsite}
             onUpdateObjective={updateGrowthObjective}
+            onUpdateTheme={updateHeatmapTheme}
             onToggleInfra={(active) => {
               const today = new Date().toLocaleDateString('en-CA');
               setUserState(p => ({
@@ -423,8 +434,9 @@ const BaseHub: React.FC<{
   onSetHonorVow: (shipped: boolean, note?: string) => void,
   onUpdateWebsite: (url: string) => void,
   onUpdateObjective: (obj: string) => void,
+  onUpdateTheme: (themeId: string) => void,
   onToggleInfra: (active: boolean) => void
-}> = ({ userId, userState, onUpdateLoops, onSetHonorVow, onUpdateWebsite, onUpdateObjective, onToggleInfra }) => {
+}> = ({ userId, userState, onUpdateLoops, onSetHonorVow, onUpdateWebsite, onUpdateObjective, onUpdateTheme, onToggleInfra }) => {
   const [showLogConfirm, setShowLogConfirm] = useState(false);
   const [shipNote, setShipNote] = useState('');
   const [showBreakConfirm, setShowBreakConfirm] = useState(false);
@@ -468,33 +480,85 @@ const BaseHub: React.FC<{
     setIsEditingObjective(false);
   };
 
+  const theme = getHeatmapTheme(userState.heatmapTheme);
+  const themeColor = rgbCss(theme.rgb);
+  const objectiveLabel = userState.isOnMaintenance ? 'Break Day' : (userState.growthObjective || 'INCREASE DAILY UNIQUE VISITORS');
+
   return (
     <div className="space-y-6 pb-20 animate-in fade-in duration-500">
-      <div className="bg-dark-card border border-brand/20 rounded-[32px] p-6 shadow-2xl relative overflow-hidden group">
-        <div className="absolute top-4 left-4 z-20 px-3 py-1 bg-brand rounded-xl flex items-center space-x-2 shadow-lg border-2 border-white/10 group-hover:scale-105 transition-transform">
+      <div
+        className={`p-6 rounded-[32px] border shadow-2xl relative overflow-hidden group transition-all duration-500 ${
+          userState.isOnMaintenance ? 'bg-indigo-950/40 border-indigo-500/50 shadow-[0_0_30px_rgba(49,46,129,0.3)]' : 'bg-dark-card border-brand/20'
+        }`}
+        title={`Tracking: ${objectiveLabel}`}
+      >
+        <div
+          className="absolute top-4 left-4 z-20 px-3 py-1 rounded-xl flex items-center space-x-2 shadow-lg border-2 border-white/10 group-hover:scale-105 transition-transform"
+          style={{ backgroundColor: themeColor }}
+        >
           <span className="text-xl font-black text-white italic tracking-tighter leading-none">{userState.streak}</span>
           <span className="text-[8px] font-black text-white/60 uppercase tracking-widest">STREAK</span>
         </div>
 
-        <div className="flex flex-col items-center space-y-4 pt-8">
+        <div className="absolute top-4 right-4 z-20 flex items-center space-x-1.5">
+          {HEATMAP_THEMES.map(t => (
+            <button
+              key={t.id}
+              onClick={() => onUpdateTheme(t.id)}
+              title={t.label}
+              className={`w-4 h-4 rounded-full border-2 transition-transform hover:scale-125 ${theme.id === t.id ? 'border-white scale-125' : 'border-white/20'}`}
+              style={{ backgroundColor: rgbCss(t.rgb) }}
+            />
+          ))}
+        </div>
+
+        <div className="flex flex-col items-center space-y-4 pt-10">
           <div className="text-center">
-            <p className="text-[10px] font-black uppercase text-brand tracking-widest mb-1">Survival Pulse</p>
-            <p className="text-[8px] font-bold text-gray-600 uppercase">Growth Heatmap</p>
+            <p
+              className={`text-[10px] font-black uppercase tracking-widest mb-1 ${userState.isOnMaintenance ? 'text-indigo-400' : ''}`}
+              style={userState.isOnMaintenance ? undefined : { color: themeColor }}
+            >
+              {userState.isOnMaintenance ? 'Active Recovery' : 'Growth Objective'}
+            </p>
+            <p className="text-[8px] font-bold text-gray-600 uppercase">Survival Pulse · Growth Heatmap</p>
+          </div>
+
+          <div className="w-full px-2">
+            {isEditingObjective && !userState.isOnMaintenance ? (
+              <input
+                autoFocus
+                className="w-full bg-transparent border-none outline-none text-xl font-black italic tracking-tighter uppercase text-white text-center leading-tight animate-in zoom-in-95"
+                value={tempObjective}
+                onChange={(e) => setTempObjective(e.target.value)}
+                onBlur={saveObjective}
+                onKeyDown={(e) => e.key === 'Enter' && saveObjective()}
+              />
+            ) : (
+              <h2
+                onClick={() => !userState.isOnMaintenance && setIsEditingObjective(true)}
+                className={`text-xl font-black italic tracking-tighter uppercase text-white leading-tight ${!userState.isOnMaintenance ? 'cursor-pointer hover:opacity-80 transition-opacity select-none' : ''}`}
+              >
+                {objectiveLabel}
+              </h2>
+            )}
           </div>
 
           <div className="grid grid-cols-7 gap-2 w-full p-4 bg-black/40 rounded-[24px] border border-white/5">
             {weekData.map((d, i) => (
               <div key={i} className="flex flex-col items-center space-y-2">
-                <span className={`text-[8px] font-black uppercase ${d.isToday ? 'text-brand' : 'text-gray-600'}`}>{d.label}</span>
+                <span className="text-[8px] font-black uppercase text-gray-600" style={d.isToday ? { color: themeColor } : undefined}>{d.label}</span>
                 <div
-                  className={`w-full aspect-square rounded-lg transition-all duration-300 flex items-center justify-center relative overflow-hidden ${d.isToday ? 'ring-2 ring-brand animate-pulse-slow shadow-[0_0_15px_rgba(225,29,72,0.3)]' : ''}`}
-                  style={getHeatmapColor(d.uvs, d.isFocus, d.isShipped)}
+                  className={`w-full aspect-square rounded-lg transition-all duration-300 flex items-center justify-center relative overflow-hidden ${d.isToday ? 'animate-pulse-slow' : ''}`}
+                  style={{
+                    ...getHeatmapColor(d.uvs, d.isFocus, d.isShipped, theme.rgb),
+                    ...(d.isToday ? { boxShadow: `0 0 0 2px ${themeColor}, 0 0 15px ${themeColor}` } : {}),
+                  }}
                 >
                   {d.isFocus ? (
                     <Coffee size={10} className="text-indigo-200" />
                   ) : (
                     <div className="relative flex items-center justify-center">
-                      {d.isShipped && <Check className={`absolute -top-3 -right-3 ${getHeatmapColor(d.uvs, d.isFocus, d.isShipped).color === '#000' ? 'text-black' : 'text-white'}`} size={10} strokeWidth={4} />}
+                      {d.isShipped && <Check className={`absolute -top-3 -right-3 ${getHeatmapColor(d.uvs, d.isFocus, d.isShipped, theme.rgb).color === '#000' ? 'text-black' : 'text-white'}`} size={10} strokeWidth={4} />}
                       {d.uvs > 0 && <span className="text-[10px] font-black tabular-nums tracking-tighter">{d.uvs}</span>}
                       {d.uvs === 0 && d.isShipped && <Check size={14} strokeWidth={4} />}
                     </div>
@@ -503,75 +567,44 @@ const BaseHub: React.FC<{
               </div>
             ))}
           </div>
-        </div>
-      </div>
 
-      <div className={`p-6 rounded-3xl border transition-all duration-500 flex flex-col items-center justify-center text-center relative ${
-        userState.isOnMaintenance ? 'bg-indigo-950/40 border-indigo-500/50 shadow-[0_0_30px_rgba(49,46,129,0.3)]' : 'bg-brand/5 border-brand/20'
-      }`}>
-        <div className="flex items-center space-x-2 mb-2">
-          {userState.isOnMaintenance ? <Coffee className="text-indigo-400" size={16} /> : <TrendingUp className="text-brand" size={16} />}
-          <span className={`text-[10px] font-black uppercase tracking-widest ${userState.isOnMaintenance ? 'text-indigo-400' : 'text-brand'}`}>
-            {userState.isOnMaintenance ? 'Active Recovery' : 'Growth Objective'}
-          </span>
-        </div>
-
-        <div className="w-full mb-2">
-          {isEditingObjective && !userState.isOnMaintenance ? (
-            <input
-              autoFocus
-              className="w-full bg-transparent border-none outline-none text-2xl font-black italic tracking-tighter uppercase text-brand text-center leading-tight animate-in zoom-in-95"
-              value={tempObjective}
-              onChange={(e) => setTempObjective(e.target.value)}
-              onBlur={saveObjective}
-              onKeyDown={(e) => e.key === 'Enter' && saveObjective()}
-            />
-          ) : (
-            <h2
-              onClick={() => !userState.isOnMaintenance && setIsEditingObjective(true)}
-              className={`text-2xl font-black italic tracking-tighter uppercase text-white leading-tight ${!userState.isOnMaintenance ? 'cursor-pointer hover:text-brand transition-colors select-none' : ''}`}
-            >
-              {userState.isOnMaintenance ? 'Break Day' : (userState.growthObjective || 'INCREASE DAILY UNIQUE VISITORS')}
-            </h2>
-          )}
-        </div>
-
-        <div className="w-full px-4">
-          {isEditingWebsite ? (
-            <div className="flex items-center space-x-2 bg-black/60 p-1.5 rounded-2xl border border-white/10 w-full animate-in slide-in-from-top-2">
-              <input
-                autoFocus
-                type="text"
-                value={tempWebsite}
-                onChange={(e) => setTempWebsite(e.target.value)}
-                onBlur={saveWebsite}
-                onKeyDown={(e) => e.key === 'Enter' && saveWebsite()}
-                placeholder="yourwebsite.com"
-                className="flex-1 bg-transparent border-none outline-none text-[10px] font-bold text-white px-3 placeholder:text-gray-700"
-              />
-              <button onClick={saveWebsite} className="p-2 bg-brand/20 text-brand rounded-xl hover:bg-brand/40 transition-colors">
-                <Check size={14} strokeWidth={3} />
+          <div className="w-full px-4">
+            {isEditingWebsite ? (
+              <div className="flex items-center space-x-2 bg-black/60 p-1.5 rounded-2xl border border-white/10 w-full animate-in slide-in-from-top-2">
+                <input
+                  autoFocus
+                  type="text"
+                  value={tempWebsite}
+                  onChange={(e) => setTempWebsite(e.target.value)}
+                  onBlur={saveWebsite}
+                  onKeyDown={(e) => e.key === 'Enter' && saveWebsite()}
+                  placeholder="yourwebsite.com"
+                  className="flex-1 bg-transparent border-none outline-none text-[10px] font-bold text-white px-3 placeholder:text-gray-700"
+                />
+                <button onClick={saveWebsite} className="p-2 bg-brand/20 text-brand rounded-xl hover:bg-brand/40 transition-colors">
+                  <Check size={14} strokeWidth={3} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsEditingWebsite(true)}
+                className="group flex items-center justify-center space-x-2 py-1.5 px-4 rounded-full bg-white/5 border border-white/5 hover:border-brand/40 hover:bg-brand/5 transition-all w-full max-w-[200px] mx-auto overflow-hidden"
+              >
+                {userState.websiteUrl ? (
+                  <>
+                    <Globe size={10} className="text-brand/60 group-hover:text-brand" />
+                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest truncate group-hover:text-white transition-colors">{userState.websiteUrl.replace(/^https?:\/\//, '')}</span>
+                    <Edit3 size={8} className="text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </>
+                ) : (
+                  <>
+                    <Plus size={10} className="text-brand/60" />
+                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Add Website</span>
+                  </>
+                )}
               </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setIsEditingWebsite(true)}
-              className="group flex items-center justify-center space-x-2 py-1.5 px-4 rounded-full bg-white/5 border border-white/5 hover:border-brand/40 hover:bg-brand/5 transition-all w-full max-w-[200px] mx-auto overflow-hidden"
-            >
-              {userState.websiteUrl ? (
-                <>
-                  <Globe size={10} className="text-brand/60 group-hover:text-brand" />
-                  <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest truncate group-hover:text-white transition-colors">{userState.websiteUrl.replace(/^https?:\/\//, '')}</span>
-                  <Edit3 size={8} className="text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </>
-              ) : (
-                <>
-                  <Plus size={10} className="text-brand/60" />
-                  <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Add Website</span>
-                </>
-              )}
-            </button>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -746,6 +779,7 @@ const AchievementsDashboard: React.FC<{ userState: UserState }> = ({ userState }
 
 const ProfileScreen: React.FC<{ userId: string | null | undefined; userState: UserState }> = ({ userId, userState }) => {
   type TimeFrame = 'WEEK' | 'MONTH' | 'YEAR' | 'ALL';
+  const theme = getHeatmapTheme(userState.heatmapTheme);
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('MONTH');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [displayName, setDisplayNameState] = useState(() => getDisplayName(userId));
@@ -899,13 +933,13 @@ const ProfileScreen: React.FC<{ userId: string | null | undefined; userState: Us
         )}
 
         <div className="animate-in fade-in duration-300">
-          {timeFrame === 'WEEK' && <FrequencyMap data={weekData} columns={7} />}
+          {timeFrame === 'WEEK' && <FrequencyMap data={weekData} columns={7} themeRgb={theme.rgb} />}
           {timeFrame === 'MONTH' && (
             <div className="space-y-4">
               <div className="grid grid-cols-7 gap-2 text-center opacity-30">
                 {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((l, i) => <span key={i} className="text-[8px] font-black uppercase">{l}</span>)}
               </div>
-              <FrequencyMap data={monthData} columns={7} />
+              <FrequencyMap data={monthData} columns={7} themeRgb={theme.rgb} />
             </div>
           )}
           {(timeFrame === 'YEAR' || timeFrame === 'ALL') && (
@@ -915,12 +949,12 @@ const ProfileScreen: React.FC<{ userId: string | null | undefined; userState: Us
                   <span className="text-[8px] font-black text-brand/40 uppercase tracking-[0.2em] block text-center border-b border-white/5 pb-1">{m.name}</span>
                   <div className="grid grid-cols-7 gap-0.5">
                     {m.days.map((d, dIdx) => (
-                       <div key={dIdx} className="aspect-square rounded-[1px] flex items-center justify-center relative overflow-hidden" style={getHeatmapColor(d.uvs, d.isFocus, d.isShipped)}>
+                       <div key={dIdx} className="aspect-square rounded-[1px] flex items-center justify-center relative overflow-hidden" style={getHeatmapColor(d.uvs, d.isFocus, d.isShipped, theme.rgb)}>
                           {d.isFocus ? (
                              <Coffee size={4} className="text-indigo-200 opacity-50" />
                           ) : (
                              <div className="relative w-full h-full flex items-center justify-center">
-                                {d.isShipped && <Check className={`absolute -top-1 -right-1 ${getHeatmapColor(d.uvs, d.isFocus, d.isShipped).color === '#000' ? 'text-black' : 'text-white'}`} size={6} strokeWidth={4} />}
+                                {d.isShipped && <Check className={`absolute -top-1 -right-1 ${getHeatmapColor(d.uvs, d.isFocus, d.isShipped, theme.rgb).color === '#000' ? 'text-black' : 'text-white'}`} size={6} strokeWidth={4} />}
                                 {d.uvs > 0 && <span className="text-[6px] font-black tabular-nums scale-75 leading-none">{d.uvs}</span>}
                              </div>
                           )}

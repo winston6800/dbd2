@@ -21,6 +21,7 @@ export interface UserState {
   defaultKpi: string; // "Unique Visitors"
   websiteUrl?: string; // User's project website
   growthObjective?: string; // Customizable growth objective text
+  heatmapTheme?: string; // Color theme id (lib/growth/themes.ts) representing the objective
   streak: number;
   history: { date: string; value: number }[];
   growthDates: string[];

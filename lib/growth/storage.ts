@@ -1,4 +1,5 @@
 import type { Group, GroupMember, UserState, FollowedPerson, Kudos } from './types';
+import { DEFAULT_HEATMAP_THEME_ID } from './themes';
 
 /**
  * Every key is scoped per signed-in user, the same pattern as
@@ -34,6 +35,7 @@ export function getDefaultUserState(): UserState {
     defaultKpi: 'Unique Visitors',
     websiteUrl: '',
     growthObjective: 'INCREASE DAILY UNIQUE VISITORS',
+    heatmapTheme: DEFAULT_HEATMAP_THEME_ID,
     streak: 0,
     minThreshold: 100,
     history: [],
