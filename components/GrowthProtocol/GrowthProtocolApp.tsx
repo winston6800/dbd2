@@ -756,13 +756,15 @@ const CapacityJournal: React.FC<{ userState: UserState; onSaveEntry: (date: stri
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [today]);
 
+  const commit = (text: string) => {
+    onSaveEntry(today, text);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  };
+
   useEffect(() => {
     if (draft === (entries[today] || '')) return;
-    const id = setTimeout(() => {
-      onSaveEntry(today, draft);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1500);
-    }, 600);
+    const id = setTimeout(() => commit(draft), 600);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft]);
@@ -791,6 +793,7 @@ const CapacityJournal: React.FC<{ userState: UserState; onSaveEntry: (date: stri
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
+          onBlur={() => { if (draft !== (entries[today] || '')) commit(draft); }}
           placeholder="Write what you did today that earned your own respect..."
           rows={5}
           className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-medium placeholder:text-gray-600 outline-none focus:border-brand/50 resize-none"
