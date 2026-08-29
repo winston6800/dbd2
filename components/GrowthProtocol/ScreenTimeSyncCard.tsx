@@ -37,7 +37,7 @@ export const ScreenTimeSyncCard: React.FC<{ userId: string | null | undefined }>
     <div className="bg-dark-card border border-white/10 rounded-3xl p-5 space-y-3">
       <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Screen Time Sync</h3>
       <p className="text-[11px] text-gray-500">
-        Paste this code into the DeadByDefault browser extension to track YouTube and Twitch time
+        Paste this code into the DeadByDefault browser extension to track YouTube, Twitch, and X time
         automatically. Load it from <code>extension/</code> in the repo — see{' '}
         <code>extension/README.md</code>.
       </p>

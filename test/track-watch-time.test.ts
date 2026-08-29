@@ -107,4 +107,20 @@ describe('POST /api/track-watch-time', () => {
     });
     expect(json).toHaveBeenCalledWith({ ok: true });
   });
+
+  it('accepts the x platform', async () => {
+    tokenRow = { user_id: 'user-1' };
+    const handler = (await import('../api/track-watch-time')).default;
+    const { req, res, json } = mockReqRes('Bearer good-token', { platform: 'x', seconds: 30, date: '2026-01-01' });
+
+    await handler(req, res);
+
+    expect(rpc).toHaveBeenCalledWith('add_watch_time', {
+      p_user_id: 'user-1',
+      p_date: '2026-01-01',
+      p_platform: 'x',
+      p_seconds: 30,
+    });
+    expect(json).toHaveBeenCalledWith({ ok: true });
+  });
 });

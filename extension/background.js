@@ -1,12 +1,14 @@
 // DeadByDefault Screen Time — background service worker.
 //
-// Tracks wall-clock time spent on a YouTube watch/shorts page or a Twitch
-// channel/VOD page, but only while that tab is the active tab in the
-// focused window AND the system isn't idle/locked. Reports accumulated
-// seconds to /api/track-watch-time roughly once a minute, authenticated
-// with the sync token pasted in from the DeadByDefault Profile tab (see
-// supabase/migrations/006_watch_time.sql for why it's a token and not a
-// normal session — this service worker can't sign in interactively).
+// Tracks wall-clock time spent on a YouTube watch/shorts page, a Twitch
+// channel/VOD page, or X/Twitter generally (a feed has no single "watch"
+// URL the way a video does, so any logged-in-looking page counts), but only
+// while that tab is the active tab in the focused window AND the system
+// isn't idle/locked. Reports accumulated seconds to /api/track-watch-time
+// roughly once a minute, authenticated with the sync token pasted in from
+// the DeadByDefault Profile tab (see supabase/migrations/006_watch_time.sql
+// for why it's a token and not a normal session — this service worker can't
+// sign in interactively).
 
 const DEFAULT_API_BASE = 'https://deadbydefault.app';
 const HEARTBEAT_ALARM = 'heartbeat';
@@ -23,6 +25,13 @@ const MAX_SECONDS_PER_SEND = 1500;
 const TWITCH_NON_CONTENT_PATHS = [
   '/directory', '/search', '/subscriptions', '/wallet', '/settings',
   '/p/', '/login', '/logout', '/broadcast', '/jobs', '/turbo', '/prime', '/downloads',
+];
+
+// X has no single "watch" URL the way a video site does — a feed, a
+// profile, and DMs are all "usage" — so this excludes only the pages you'd
+// visit without actually using the product (auth, marketing, embeds).
+const X_NON_USAGE_PATHS = [
+  '/login', '/logout', '/i/flow', '/tos', '/privacy', '/about', '/download',
 ];
 
 function todayStr() {
@@ -50,6 +59,11 @@ function classifyUrl(rawUrl) {
     return 'twitch';
   }
 
+  if (url.hostname.endsWith('x.com') || url.hostname.endsWith('twitter.com')) {
+    if (X_NON_USAGE_PATHS.some(p => url.pathname.startsWith(p))) return null;
+    return 'x';
+  }
+
   return null;
 }
 
@@ -72,11 +86,11 @@ async function addPending(platform, seconds) {
   const date = todayStr();
   const { pending = {}, totals = {} } = await chrome.storage.local.get(['pending', 'totals']);
 
-  const pendingDay = pending[date] || { youtube: 0, twitch: 0 };
+  const pendingDay = pending[date] || { youtube: 0, twitch: 0, x: 0 };
   pendingDay[platform] = (pendingDay[platform] || 0) + seconds;
   pending[date] = pendingDay;
 
-  const totalsDay = totals[date] || { youtube: 0, twitch: 0 };
+  const totalsDay = totals[date] || { youtube: 0, twitch: 0, x: 0 };
   totalsDay[platform] = (totalsDay[platform] || 0) + seconds;
   totals[date] = totalsDay;
 
@@ -113,7 +127,7 @@ async function flushPending() {
   const base = (apiBaseUrl || DEFAULT_API_BASE).replace(/\/$/, '');
 
   for (const [date, byPlatform] of Object.entries(pending)) {
-    for (const platform of ['youtube', 'twitch']) {
+    for (const platform of ['youtube', 'twitch', 'x']) {
       let seconds = byPlatform[platform];
       while (seconds > 0) {
         const chunk = Math.min(seconds, MAX_SECONDS_PER_SEND);

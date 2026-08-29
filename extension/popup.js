@@ -12,10 +12,11 @@ function todayStr() {
 
 async function render() {
   const { totals = {}, apiBaseUrl, syncToken } = await chrome.storage.local.get(['totals', 'apiBaseUrl', 'syncToken']);
-  const today = totals[todayStr()] || { youtube: 0, twitch: 0 };
+  const today = totals[todayStr()] || { youtube: 0, twitch: 0, x: 0 };
 
   document.getElementById('youtube-time').textContent = formatMinutes(today.youtube || 0);
   document.getElementById('twitch-time').textContent = formatMinutes(today.twitch || 0);
+  document.getElementById('x-time').textContent = formatMinutes(today.x || 0);
 
   const status = document.getElementById('status');
   if (syncToken) {

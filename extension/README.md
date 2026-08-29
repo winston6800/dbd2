@@ -1,9 +1,10 @@
 # DeadByDefault Screen Time
 
 A small browser extension that tracks time spent actually watching YouTube
-(`/watch`, `/shorts`) or Twitch (any channel/VOD page, not the homepage) and
-reports it into your DeadByDefault streak — the Command tab's **Screen Time
-Today** card.
+(`/watch`, `/shorts`), Twitch (any channel/VOD page, not the homepage), or
+using X/Twitter generally (a feed has no single "watch" page the way a video
+does, so any page beyond login/marketing counts), and reports it into your
+DeadByDefault streak — the Command tab's **Screen Time Today** card.
 
 It only counts time while the tab is the *active* tab in the *focused*
 window and the system isn't idle or locked, checked every minute. Background
@@ -33,7 +34,7 @@ since that's the sync interval.
 
 - `background.js` (a Manifest V3 service worker) checks the focused window's
   active tab once a minute, plus on tab/window/idle-state changes, and
-  classifies it as `youtube`, `twitch`, or neither.
+  classifies it as `youtube`, `twitch`, `x`, or neither.
 - Elapsed seconds accumulate in `chrome.storage.local` under `pending`
   (unsynced) and `totals` (everything ever tracked locally, for the popup).
 - Every heartbeat, unsynced seconds are POSTed to
@@ -51,7 +52,7 @@ since that's the sync interval.
 - Manifest V3 service workers can be killed and restarted by the browser at
   any time. State is persisted to `chrome.storage.local` on every check so a
   restart loses at most the last few seconds, not the whole session.
-- The Twitch "is this a content page" check is a short exclude-list
-  (`/directory`, `/search`, `/settings`, …), not a real classifier — an
-  unlisted non-content path could get miscounted as watching.
+- The Twitch "is this a content page" check and the X "is this actual usage"
+  check are both short exclude-lists (`/directory`, `/search`, `/login`, …),
+  not real classifiers — an unlisted path could get miscounted either way.
 - No Firefox manifest yet; this is Chrome/Edge (Manifest V3) only.

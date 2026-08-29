@@ -15,6 +15,7 @@ import { supabase } from '../supabase';
 export interface TodayScreenTime {
   youtubeSeconds: number;
   twitchSeconds: number;
+  xSeconds: number;
 }
 
 /** en-CA gives YYYY-MM-DD, the same convention `lib/growth/storage.ts` uses for streak dates. */
@@ -79,10 +80,11 @@ export async function fetchTodayScreenTime(userId: string): Promise<TodayScreenT
     .eq('user_id', userId)
     .eq('date', today());
 
-  const result: TodayScreenTime = { youtubeSeconds: 0, twitchSeconds: 0 };
+  const result: TodayScreenTime = { youtubeSeconds: 0, twitchSeconds: 0, xSeconds: 0 };
   for (const row of data ?? []) {
     if (row.platform === 'youtube') result.youtubeSeconds = row.seconds;
     else if (row.platform === 'twitch') result.twitchSeconds = row.seconds;
+    else if (row.platform === 'x') result.xSeconds = row.seconds;
   }
   return result;
 }

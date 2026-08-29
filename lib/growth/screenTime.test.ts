@@ -80,16 +80,17 @@ describe('regenerateSyncToken', () => {
 });
 
 describe('fetchTodayScreenTime', () => {
-  it('returns zero for both platforms when nothing is recorded', async () => {
+  it('returns zero for all platforms when nothing is recorded', async () => {
     watchTimeRows = [];
-    expect(await fetchTodayScreenTime('user-1')).toEqual({ youtubeSeconds: 0, twitchSeconds: 0 });
+    expect(await fetchTodayScreenTime('user-1')).toEqual({ youtubeSeconds: 0, twitchSeconds: 0, xSeconds: 0 });
   });
 
   it('maps rows by platform', async () => {
     watchTimeRows = [
       { platform: 'youtube', seconds: 120 },
       { platform: 'twitch', seconds: 45 },
+      { platform: 'x', seconds: 300 },
     ];
-    expect(await fetchTodayScreenTime('user-1')).toEqual({ youtubeSeconds: 120, twitchSeconds: 45 });
+    expect(await fetchTodayScreenTime('user-1')).toEqual({ youtubeSeconds: 120, twitchSeconds: 45, xSeconds: 300 });
   });
 });

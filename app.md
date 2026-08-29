@@ -42,7 +42,7 @@ The daily loop, and where every session starts.
 - **Growth Terminal** — +/- buttons logging today's loop count, and the **Honor Code Entry** button:
   a confirmation modal asking whether the user actually shipped something today, with an optional
   note. Marking it kept (or later revoking it) recalculates the streak immediately.
-- **Screen Time Today** — today's YouTube and Twitch minutes, reported automatically by the
+- **Screen Time Today** — today's YouTube, Twitch, and X minutes, reported automatically by the
   companion browser extension (`extension/`) rather than typed in. Polls every 30 seconds; shows
   "Nothing synced yet" until the extension is installed and paired via the code on Profile.
 - **Take a Break** — toggles maintenance mode for today, which does not break the streak but greys

@@ -1,12 +1,14 @@
 {
   "manifest_version": 3,
   "name": "DeadByDefault Screen Time",
-  "version": "1.0.0",
-  "description": "Tracks time spent on YouTube and Twitch and reports it to your DeadByDefault streak.",
+  "version": "1.1.0",
+  "description": "Tracks time spent on YouTube, Twitch, and X and reports it to your DeadByDefault streak.",
   "permissions": ["storage", "alarms", "idle"],
   "host_permissions": [
     "*://*.youtube.com/*",
     "*://*.twitch.tv/*",
+    "*://*.x.com/*",
+    "*://*.twitter.com/*",
     "https://deadbydefault.app/*",
     "https://*.vercel.app/*",
     "http://localhost:3000/*"

@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
-const PLATFORMS = ['youtube', 'twitch'] as const;
+const PLATFORMS = ['youtube', 'twitch', 'x'] as const;
 type Platform = (typeof PLATFORMS)[number];
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -37,7 +37,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { platform, seconds, date } = req.body ?? {};
 
   if (!PLATFORMS.includes(platform)) {
-    return res.status(400).json({ error: 'platform must be "youtube" or "twitch"' });
+    return res.status(400).json({ error: 'platform must be "youtube", "twitch", or "x"' });
   }
   if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds <= 0 || seconds > MAX_SECONDS_PER_WRITE) {
     return res.status(400).json({ error: `seconds must be a number between 1 and ${MAX_SECONDS_PER_WRITE}` });

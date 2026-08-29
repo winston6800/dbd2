@@ -125,9 +125,9 @@ See [app.md](./app.md) for behaviour.
 ## Screen time tracking
 
 A companion browser extension (`extension/`, Manifest V3, Chrome/Edge) tracks time actually spent
-watching YouTube or Twitch — active tab, focused window, system not idle — and reports it into the
-Command tab's **Screen Time Today** card. It is not published to a web store; load it unpacked. See
-[extension/README.md](./extension/README.md) for install steps.
+watching YouTube or Twitch, or using X/Twitter — active tab, focused window, system not idle — and
+reports it into the Command tab's **Screen Time Today** card. It is not published to a web store;
+load it unpacked. See [extension/README.md](./extension/README.md) for install steps.
 
 | Piece | File |
 |---|---|
