@@ -322,7 +322,7 @@ export const GrowthProtocolApp: React.FC = () => {
           />
         )}
         {screen === AppScreen.JOURNAL && (
-          <SelfRespectJournal userState={userState} onSaveEntry={saveJournalEntry} />
+          <CapacityJournal userState={userState} onSaveEntry={saveJournalEntry} />
         )}
         {screen === AppScreen.PROFILE && (
           <ProfileScreen userId={userId} userState={userState} />
@@ -745,7 +745,7 @@ const BaseHub: React.FC<{
   );
 };
 
-const SelfRespectJournal: React.FC<{ userState: UserState; onSaveEntry: (date: string, text: string) => void }> = ({ userState, onSaveEntry }) => {
+const CapacityJournal: React.FC<{ userState: UserState; onSaveEntry: (date: string, text: string) => void }> = ({ userState, onSaveEntry }) => {
   const today = new Date().toLocaleDateString('en-CA');
   const entries = userState.journalEntries || {};
   const [draft, setDraft] = useState(entries[today] || '');
@@ -756,11 +756,16 @@ const SelfRespectJournal: React.FC<{ userState: UserState; onSaveEntry: (date: s
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [today]);
 
-  const commit = () => {
-    onSaveEntry(today, draft);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1500);
-  };
+  useEffect(() => {
+    if (draft === (entries[today] || '')) return;
+    const id = setTimeout(() => {
+      onSaveEntry(today, draft);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    }, 600);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft]);
 
   const pastEntries = Object.entries(entries)
     .filter(([date]) => date !== today)
@@ -769,34 +774,27 @@ const SelfRespectJournal: React.FC<{ userState: UserState; onSaveEntry: (date: s
   return (
     <div className="space-y-8 pb-20 animate-in slide-in-from-bottom-4">
       <div className="flex flex-col">
-        <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase">Self Respect Journal</h2>
+        <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase">Capacity Journal</h2>
         <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">
           What did you do today that you give yourself self respect for?
         </p>
       </div>
 
       <div className="bg-dark-card border border-brand/20 rounded-3xl p-5 space-y-3">
-        <div className="flex items-center space-x-2 text-brand">
-          <Heart size={14} />
-          <span className="text-[10px] font-black uppercase tracking-widest">Today</span>
+        <div className="flex items-center justify-between text-brand">
+          <div className="flex items-center space-x-2">
+            <Heart size={14} />
+            <span className="text-[10px] font-black uppercase tracking-widest">Today</span>
+          </div>
+          {saved && <span className="text-[10px] text-brand font-bold uppercase tracking-widest">Saved</span>}
         </div>
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
           placeholder="Write what you did today that earned your own respect..."
           rows={5}
           className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-medium placeholder:text-gray-600 outline-none focus:border-brand/50 resize-none"
         />
-        <div className="flex items-center justify-between">
-          <button
-            onClick={commit}
-            className="px-4 py-2 bg-brand text-white font-black uppercase tracking-widest text-[10px] rounded-xl shadow-lg"
-          >
-            Save
-          </button>
-          {saved && <span className="text-[10px] text-brand font-bold uppercase tracking-widest">Saved</span>}
-        </div>
       </div>
 
       <div className="space-y-4">

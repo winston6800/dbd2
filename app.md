@@ -62,12 +62,12 @@ Create a group to get a shareable join link (`?join=<base64>`); anyone who opens
 joins with a live-updating snapshot of their state. Also lists who you follow (via a similar
 `?follow=<base64>` link from their Profile tab), with an unfollow control.
 
-### Journal
-The Self Respect Journal: one free-text entry per day answering "what did you do today that you give
-yourself self respect for?" Today's entry autosaves on blur (or the Save button); past entries are
-read-only, newest first — editing history isn't supported, same as growth data elsewhere. Not to be
-confused with the admin analytics dashboard behind the header's **Analytics** link, which is unrelated
-business metrics (signups, funnel, MRR) and still lives there for admins.
+### Capacity
+The Capacity Journal: one free-text entry per day answering "what did you do today that you give
+yourself self respect for?" Today's entry autosaves as you type (600ms after you stop); past entries
+are read-only, newest first — editing history isn't supported, same as growth data elsewhere. Not to
+be confused with the admin analytics dashboard behind the header's **Analytics** link, which is
+unrelated business metrics (signups, funnel, MRR) and still lives there for admins.
 
 ### Profile
 Display name (editable, used everywhere the person appears to others) and a **Copy follow link**

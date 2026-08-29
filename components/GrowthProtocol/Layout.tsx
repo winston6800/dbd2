@@ -58,7 +58,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeScreen, onNavigate, onO
           active={activeScreen === AppScreen.JOURNAL}
           onClick={() => onNavigate(AppScreen.JOURNAL)}
           icon={<BookHeart size={20} />}
-          label="Journal"
+          label="Capacity"
         />
         <NavButton
           active={activeScreen === AppScreen.PROFILE}
