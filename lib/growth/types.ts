@@ -55,15 +55,6 @@ export interface Kudos {
   emoji: ReactionEmoji;
 }
 
-export interface Challenge {
-  id: string;
-  name: string;
-  type: 'weekly_ship' | 'weekly_loops' | 'streak';
-  target: number;
-  startDate: string;
-  endDate: string;
-}
-
 export interface GroupMember {
   id: string;
   name: string;

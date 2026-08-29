@@ -16,8 +16,6 @@ import {
   updateFollowed,
   decodeFollowProfileFromUrl,
   getFollowMeLink,
-  getChallenges,
-  getChallengeProgress,
 } from '../../lib/growth/storage';
 import { GroupsScreen } from './GroupsScreen';
 import { FeedScreen } from './FeedScreen';
@@ -27,36 +25,7 @@ import { ScreenTimeCard } from './ScreenTimeCard';
 import { ScreenTimeSyncCard } from './ScreenTimeSyncCard';
 import { track } from '../../lib/analytics';
 import { useAuth } from '../../lib/auth';
-import { RefreshCw, X, Flame, Calendar, Award, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, Coffee, Moon, ArrowUp, Edit3, Globe, Zap, UserPlus, Copy, Trophy } from 'lucide-react';
-
-const ChallengesBlock: React.FC<{ userId: string | null | undefined; userState: UserState }> = ({ userId, userState }) => {
-  const challenges = getChallenges(userId);
-  return (
-    <div className="bg-dark-card border border-white/10 rounded-3xl p-5 space-y-4">
-      <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center space-x-2">
-        <Trophy size={12} />
-        <span>Weekly Challenges</span>
-      </h3>
-      <div className="space-y-3">
-        {challenges.map(ch => {
-          const progress = getChallengeProgress(ch, userState);
-          const done = progress >= ch.target;
-          return (
-            <div key={ch.id} className={`p-3 rounded-2xl border ${done ? 'bg-brand/10 border-brand/30' : 'bg-black/40 border-white/5'}`}>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-sm font-bold text-white">{ch.name}</span>
-                <span className={`text-[10px] font-black ${done ? 'text-brand' : 'text-gray-500'}`}>{progress}/{ch.target}</span>
-              </div>
-              <div className="w-full h-1.5 bg-black rounded-full overflow-hidden">
-                <div className={`h-full transition-all duration-500 ${done ? 'bg-brand' : 'bg-gray-700'}`} style={{ width: `${Math.min(100, (progress / ch.target) * 100)}%` }} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
+import { RefreshCw, X, Flame, Calendar, Award, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, Coffee, Moon, ArrowUp, Edit3, Globe, Zap, UserPlus, Copy } from 'lucide-react';
 
 const getHeatmapColor = (uvs: number, isFocus?: boolean, isShipped?: boolean) => {
   if (isFocus) return { backgroundColor: 'rgb(49, 46, 129)', border: '1px solid rgba(79, 70, 229, 0.4)', color: '#fff' };
@@ -652,8 +621,6 @@ const BaseHub: React.FC<{
       </div>
 
       <ScreenTimeCard userId={userId} />
-
-      <ChallengesBlock userId={userId} userState={userState} />
 
       <div className="flex justify-center pt-2">
         <button onClick={() => setShowBreakConfirm(true)} className={`px-8 py-3 rounded-full border text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center space-x-2 shadow-2xl ${userState.isOnMaintenance ? 'bg-indigo-900 border-indigo-700 text-white' : 'bg-white/5 border-white/10 text-gray-500 hover:text-indigo-400/80'}`}>

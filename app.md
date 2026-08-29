@@ -42,8 +42,6 @@ The daily loop, and where every session starts.
 - **Screen Time Today** — today's YouTube and Twitch minutes, reported automatically by the
   companion browser extension (`extension/`) rather than typed in. Polls every 30 seconds; shows
   "Nothing synced yet" until the extension is installed and paired via the code on Profile.
-- **Weekly Challenges** — three fixed challenges reset every Monday: ship 5 days, log 50 loops,
-  reach a 7-day streak. Progress bars only; no reward beyond seeing it fill.
 - **Take a Break** — toggles maintenance mode for today, which does not break the streak but greys
   out the terminal and marks the day as a rest day on the heatmap instead of a zero.
 

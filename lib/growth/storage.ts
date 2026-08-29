@@ -1,4 +1,4 @@
-import type { Group, GroupMember, UserState, FollowedPerson, Kudos, Challenge } from './types';
+import type { Group, GroupMember, UserState, FollowedPerson, Kudos } from './types';
 
 /**
  * Every key is scoped per signed-in user, the same pattern as
@@ -16,7 +16,6 @@ const GROUPS_KEY = 'dbd_groups_v2';
 const FOLLOWING_KEY = 'dbd_following_v1';
 const DISPLAY_NAME_KEY = 'dbd_display_name';
 const KUDOS_KEY = 'dbd_kudos_v1';
-const CHALLENGES_KEY = 'dbd_challenges_v1';
 const DISCOVERY_LIST_KEY = 'dbd_discovery_list_v1';
 
 type UserId = string | null | undefined;
@@ -229,81 +228,6 @@ export function removeKudos(userId: UserId, activityKey: string): void {
 
 export function hasKudos(userId: UserId, activityKey: string): Kudos | undefined {
   return getKudos(userId).find(k => k.activityKey === activityKey);
-}
-
-// --- Challenges ---
-
-function getWeekBounds(): { start: string; end: string } {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(now);
-  monday.setDate(diff);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  return {
-    start: monday.toLocaleDateString('en-CA'),
-    end: sunday.toLocaleDateString('en-CA'),
-  };
-}
-
-export function getDefaultChallenges(): Challenge[] {
-  const { start, end } = getWeekBounds();
-  return [
-    { id: 'ch_weekly_ship', name: 'Ship 5 days this week', type: 'weekly_ship', target: 5, startDate: start, endDate: end },
-    { id: 'ch_weekly_loops', name: 'Log 50 loops this week', type: 'weekly_loops', target: 50, startDate: start, endDate: end },
-    { id: 'ch_streak_7', name: '7-day streak', type: 'streak', target: 7, startDate: start, endDate: end },
-  ];
-}
-
-export function getChallenges(userId: UserId): Challenge[] {
-  const raw = localStorage.getItem(scopedKey(CHALLENGES_KEY, userId));
-  if (!raw) return getDefaultChallenges();
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : getDefaultChallenges();
-  } catch {
-    return getDefaultChallenges();
-  }
-}
-
-export function saveChallenges(userId: UserId, challenges: Challenge[]): void {
-  localStorage.setItem(scopedKey(CHALLENGES_KEY, userId), JSON.stringify(challenges));
-}
-
-/** Compute progress for a challenge given user state */
-export function getChallengeProgress(challenge: Challenge, userState: UserState): number {
-  const { startDate, endDate, type } = challenge;
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-
-  if (type === 'streak') {
-    return userState.streak;
-  }
-
-  if (type === 'weekly_ship') {
-    let count = 0;
-    const d = new Date(start);
-    while (d <= end) {
-      const dateStr = d.toLocaleDateString('en-CA');
-      if (userState.dailyShipped[dateStr]) count++;
-      d.setDate(d.getDate() + 1);
-    }
-    return count;
-  }
-
-  if (type === 'weekly_loops') {
-    let total = 0;
-    const d = new Date(start);
-    while (d <= end) {
-      const dateStr = d.toLocaleDateString('en-CA');
-      total += userState.dailyUvs[dateStr] || 0;
-      d.setDate(d.getDate() + 1);
-    }
-    return total;
-  }
-
-  return 0;
 }
 
 // --- Discovery ---
