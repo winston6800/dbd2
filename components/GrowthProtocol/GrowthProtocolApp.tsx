@@ -254,6 +254,20 @@ export const GrowthProtocolApp: React.FC = () => {
     });
   };
 
+  const addSkill = (skill: string) => {
+    const trimmed = skill.trim();
+    if (!trimmed) return;
+    setUserState(prev => {
+      const skills = prev.skills || [];
+      if (skills.some(s => s.toLowerCase() === trimmed.toLowerCase())) return prev;
+      return { ...prev, skills: [...skills, trimmed] };
+    });
+  };
+
+  const removeSkill = (skill: string) => {
+    setUserState(prev => ({ ...prev, skills: (prev.skills || []).filter(s => s !== skill) }));
+  };
+
   const simulateData = (daysCount: number) => {
     const datesToAdd: string[] = [];
     const uvsToAdd: Record<string, number> = {};
@@ -335,6 +349,9 @@ export const GrowthProtocolApp: React.FC = () => {
             following={following}
             groups={groups}
             currentUserName={getDisplayName(userId)}
+            skills={userState.skills || []}
+            onAddSkill={addSkill}
+            onRemoveSkill={removeSkill}
           />
         )}
         {screen === AppScreen.DISCOVER && (

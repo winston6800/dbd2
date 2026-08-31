@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, CheckCircle, Zap, Coffee, ThumbsUp } from 'lucide-react';
+import { Activity, CheckCircle, Zap, Coffee, ThumbsUp, Gem, Plus, X as XIcon } from 'lucide-react';
 import type { FeedActivity, FollowedPerson, Group, ReactionEmoji } from '../../lib/growth/types';
 import { buildFeedActivities } from '../../lib/growth/feedUtils';
 import { hasKudos, addKudos, removeKudos } from '../../lib/growth/storage';
@@ -83,14 +83,79 @@ const ActivityCard: React.FC<{
   );
 };
 
+/**
+ * Value: a simple list of skills you have — proof of what you can build
+ * yourself, independent of anyone's permission to hire you for it. Kept
+ * deliberately simple for now: add a skill, remove a skill, nothing more.
+ */
+const ValueCard: React.FC<{
+  skills: string[];
+  onAdd: (skill: string) => void;
+  onRemove: (skill: string) => void;
+}> = ({ skills, onAdd, onRemove }) => {
+  const [draft, setDraft] = useState('');
+
+  const submit = () => {
+    onAdd(draft);
+    setDraft('');
+  };
+
+  return (
+    <div className="bg-dark-card border border-brand/20 rounded-3xl p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <Gem size={14} className="text-brand" />
+        <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Value</h3>
+      </div>
+      <p className="text-[10px] text-gray-600 -mt-2">Skills you have. What you can build yourself, no permission needed.</p>
+
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+          placeholder="Add a skill..."
+          className="flex-1 bg-black/60 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-medium placeholder:text-gray-600 outline-none focus:border-brand/50"
+        />
+        <button
+          onClick={submit}
+          disabled={!draft.trim()}
+          className="w-10 h-10 flex-shrink-0 rounded-xl bg-brand text-white flex items-center justify-center disabled:opacity-30"
+          title="Add skill"
+        >
+          <Plus size={18} />
+        </button>
+      </div>
+
+      {skills.length === 0 ? (
+        <p className="text-[11px] text-gray-600">Nothing added yet.</p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {skills.map(skill => (
+            <span key={skill} className="flex items-center gap-1.5 bg-black/50 border border-white/10 rounded-full pl-3 pr-2 py-1.5 text-xs font-bold text-white">
+              {skill}
+              <button onClick={() => onRemove(skill)} className="text-gray-600 hover:text-gray-300" title={`Remove ${skill}`}>
+                <XIcon size={12} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 interface FeedScreenProps {
   userId: string | null | undefined;
   following: Record<string, FollowedPerson>;
   groups: Record<string, Group>;
   currentUserName: string;
+  skills: string[];
+  onAddSkill: (skill: string) => void;
+  onRemoveSkill: (skill: string) => void;
 }
 
-export const FeedScreen: React.FC<FeedScreenProps> = ({ userId, following, groups, currentUserName }) => {
+export const FeedScreen: React.FC<FeedScreenProps> = ({ userId, following, groups, currentUserName, skills, onAddSkill, onRemoveSkill }) => {
   const activities = buildFeedActivities(following, groups, currentUserName);
 
   const [, forceUpdate] = useState(0);
@@ -111,6 +176,8 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ userId, following, group
         <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase">Activity Feed</h2>
         <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mt-1">What your squad is building</p>
       </div>
+
+      <ValueCard skills={skills} onAdd={onAddSkill} onRemove={onRemoveSkill} />
 
       {activities.length === 0 ? (
         <div className="bg-dark-card border border-white/5 rounded-3xl p-12 text-center">

@@ -36,6 +36,9 @@ export interface UserState {
   // see components/GrowthProtocol/ContaminationTracker.tsx. Replaces the
   // browser-extension-based automatic tracker (extension/, paused for now).
   screenTimeLog?: Record<string, { youtube: number; twitch: number; x: number; porn: number }>;
+  // Skills the user has — the "Value" card on Feed. What you can point to
+  // that you built yourself, independent of anyone's permission to hire you.
+  skills?: string[];
   stats: UserStats;
   achievements: Achievement[];
   currentUvs: number;

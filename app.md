@@ -56,9 +56,14 @@ The daily loop, and where every session starts.
   out the terminal and marks the day as a rest day on the heatmap instead of a zero.
 
 ### Feed
-Activities from people you follow and people in your groups, today only: shipped (with note),
-logged N loops, or took a break. Each activity can take one of four emoji reactions (🔥🚀💪👏); one
-reaction per person per activity, toggleable.
+**Value** sits above the feed: a simple skills list — type a skill, hit enter or the + button, it
+becomes a chip with a remove control. Case-insensitive de-duped (adding "react" when "React" is
+already there is a no-op). Deliberately minimal for now; the point is a running, self-owned record of
+what you can build, not a full portfolio.
+
+Below that, activities from people you follow and people in your groups, today only: shipped (with
+note), logged N loops, or took a break. Each activity can take one of four emoji reactions (🔥🚀💪👏);
+one reaction per person per activity, toggleable.
 
 ### Discover
 Founders to follow: members of your groups you are not already following, plus anyone decoded from a
@@ -107,7 +112,7 @@ responsive classes give for free.
 ```
 UserState: { defaultKpi, websiteUrl?, growthObjective?, heatmapTheme?, streak, growthDates[], dailyUvs,
              dailyGrowthActions, dailyInfrastructureFocus, dailyShipped, dailyShipNote?, journalEntries?,
-             screenTimeLog?, stats, achievements[], currentUvs, isOnMaintenance, minThreshold }
+             screenTimeLog?, skills?, stats, achievements[], currentUvs, isOnMaintenance, minThreshold }
 ```
 
 Persisted to `localStorage` under `dbd_state_v1:<userId>` after every change and restored on mount.
