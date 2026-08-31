@@ -42,14 +42,13 @@ The daily loop, and where every session starts.
 - **Growth Terminal** — +/- buttons logging today's loop count, and the **Honor Code Entry** button:
   a confirmation modal asking whether the user actually shipped something today, with an optional
   note. Marking it kept (or later revoking it) recalculates the streak immediately.
-- **Contamination Tracker** — self-reported YouTube/Twitch/X usage, one tap of a platform's logo per
-  hour used. Each platform gets its own isometric glass vial that starts clear and turns murkier as
-  today's hours climb toward a 6-hour cap; a small undo arrow appears once you've logged anything, in
-  case of a mis-tap. Below that, a WEEK / MONTH / YEAR / ALL toggle switches the trend row between
-  granularities — 6 rolling weeks, 6 calendar months, one vial per year the account has data for, or
-  (for ALL) a single lifetime vial per platform — so clearing it out of your system stays visible
-  whether you're checking in daily or looking back over a year. Replaces the automatic
-  browser-extension tracker, paused for now — see `extension/README.md`.
+- **Contamination Tracker** — self-reported usage across four categories: YouTube, Twitch, and X
+  (tap logs an hour) plus Porn (tap logs a use). Each category gets one isometric glass vial that
+  starts clear and turns murkier as usage climbs toward that category's cap; undo appears next to
+  anything logged today, in case of a mis-tap. A DAY / WEEK / MONTH / YEAR / ALL toggle changes which
+  window the same four vials are reading from — tapping always logs to today regardless of which
+  window is showing, so the trend is visible without needing a separate history view. Replaces the
+  automatic browser-extension tracker, paused for now — see `extension/README.md`.
 - **Take a Break** — toggles maintenance mode for today, which does not break the streak but greys
   out the terminal and marks the day as a rest day on the heatmap instead of a zero.
 

@@ -236,7 +236,7 @@ export const GrowthProtocolApp: React.FC = () => {
     const today = new Date().toLocaleDateString('en-CA');
     setUserState(prev => {
       const log = { ...(prev.screenTimeLog || {}) };
-      const day = { ...(log[today] || { youtube: 0, twitch: 0, x: 0 }) };
+      const day = { ...(log[today] || { youtube: 0, twitch: 0, x: 0, porn: 0 }) };
       day[platform] = day[platform] + 1;
       log[today] = day;
       return { ...prev, screenTimeLog: log };
@@ -247,7 +247,7 @@ export const GrowthProtocolApp: React.FC = () => {
     const today = new Date().toLocaleDateString('en-CA');
     setUserState(prev => {
       const log = { ...(prev.screenTimeLog || {}) };
-      const day = { ...(log[today] || { youtube: 0, twitch: 0, x: 0 }) };
+      const day = { ...(log[today] || { youtube: 0, twitch: 0, x: 0, porn: 0 }) };
       day[platform] = Math.max(0, day[platform] - 1);
       log[today] = day;
       return { ...prev, screenTimeLog: log };
