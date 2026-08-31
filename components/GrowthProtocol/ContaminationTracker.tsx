@@ -1,8 +1,9 @@
-import React, { useId, useMemo } from 'react';
+import React, { useId, useMemo, useState } from 'react';
 import { Youtube, Twitch, X, RotateCcw } from 'lucide-react';
 import type { UserState } from '../../lib/growth/types';
 
 export type ScreenTimePlatform = 'youtube' | 'twitch' | 'x';
+type TrendMode = 'WEEK' | 'MONTH' | 'YEAR' | 'ALL';
 
 const PLATFORMS: { key: ScreenTimePlatform; label: string; icon: React.ReactNode }[] = [
   { key: 'youtube', label: 'YouTube', icon: <Youtube size={18} className="text-red-500" /> },
@@ -10,10 +11,21 @@ const PLATFORMS: { key: ScreenTimePlatform; label: string; icon: React.ReactNode
   { key: 'x', label: 'X', icon: <X size={18} className="text-gray-300" /> },
 ];
 
-/** Hours at which a day (or week) reads as "fully contaminated" in the vial. */
+/**
+ * Hours at which a bucket reads as "fully contaminated" in its vial, per
+ * granularity. Month/year/all-time caps are rough multiples of the daily
+ * cap (roughly 3h/day sustained), not a precise formula — they just need to
+ * make a genuinely heavy month/year/lifetime read as visibly murkier than a
+ * light one.
+ */
 const DAILY_CAP_HOURS = 6;
 const WEEKLY_CAP_HOURS = 21;
+const MONTHLY_CAP_HOURS = 90;
+const YEARLY_CAP_HOURS = 1000;
+const ALL_TIME_CAP_HOURS = 4000;
 const WEEKS_SHOWN = 6;
+const MONTHS_SHOWN = 6;
+const YEARS_SHOWN_MAX = 6;
 
 const CLEAR: [number, number, number] = [214, 234, 248];
 const CONTAMINATED: [number, number, number] = [66, 58, 20];
@@ -97,6 +109,50 @@ function weekTotal(log: UserState['screenTimeLog'], weeksAgo: number, platform: 
   return total;
 }
 
+/** Sums a platform's hours across every logged date whose key has `prefix`. */
+function totalForPrefix(log: UserState['screenTimeLog'], prefix: string, platform: ScreenTimePlatform): number {
+  if (!log) return 0;
+  let total = 0;
+  for (const [date, day] of Object.entries(log)) {
+    if (date.startsWith(prefix)) total += day[platform] || 0;
+  }
+  return total;
+}
+
+function monthTotal(log: UserState['screenTimeLog'], monthsAgo: number, platform: ScreenTimePlatform): number {
+  const d = new Date();
+  d.setDate(1); // avoid month-length rollover (e.g. Mar 31 - 1 month)
+  d.setMonth(d.getMonth() - monthsAgo);
+  const prefix = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  return totalForPrefix(log, prefix, platform);
+}
+
+function monthLabel(monthsAgo: number): string {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - monthsAgo);
+  return d.toLocaleDateString('en-US', { month: 'short' });
+}
+
+function yearTotal(log: UserState['screenTimeLog'], year: number, platform: ScreenTimePlatform): number {
+  return totalForPrefix(log, String(year), platform);
+}
+
+function yearsWithData(log: UserState['screenTimeLog']): number[] {
+  const currentYear = new Date().getFullYear();
+  const years = new Set<number>([currentYear]);
+  for (const date of Object.keys(log || {})) {
+    years.add(Number(date.slice(0, 4)));
+  }
+  return Array.from(years)
+    .sort((a, b) => a - b)
+    .slice(-YEARS_SHOWN_MAX);
+}
+
+function allTimeTotal(log: UserState['screenTimeLog'], platform: ScreenTimePlatform): number {
+  return totalForPrefix(log, '', platform);
+}
+
 export const ContaminationTracker: React.FC<{
   userState: UserState;
   onLog: (platform: ScreenTimePlatform) => void;
@@ -104,17 +160,41 @@ export const ContaminationTracker: React.FC<{
 }> = ({ userState, onLog, onUndo }) => {
   const today = todayStr();
   const todayLog = userState.screenTimeLog?.[today];
+  const [mode, setMode] = useState<TrendMode>('WEEK');
+  const log = userState.screenTimeLog;
 
-  const weeklyByPlatform = useMemo(() => {
-    const out: Record<ScreenTimePlatform, number[]> = { youtube: [], twitch: [], x: [] };
+  const years = useMemo(() => yearsWithData(log), [log]);
+
+  // Bucketed views (WEEK/MONTH/YEAR): a row of vials per platform, oldest to
+  // newest, each capped at that granularity's threshold. ALL is one lifetime
+  // vial per platform instead of a row, so it's handled separately below.
+  const buckets = useMemo(() => {
+    const out: Record<ScreenTimePlatform, { hours: number; label: string }[]> = { youtube: [], twitch: [], x: [] };
     for (const { key } of PLATFORMS) {
-      for (let w = WEEKS_SHOWN - 1; w >= 0; w--) {
-        out[key].push(weekTotal(userState.screenTimeLog, w, key));
+      if (mode === 'WEEK') {
+        for (let w = WEEKS_SHOWN - 1; w >= 0; w--) {
+          out[key].push({ hours: weekTotal(log, w, key), label: w === 0 ? 'This wk' : `-${w}w` });
+        }
+      } else if (mode === 'MONTH') {
+        for (let m = MONTHS_SHOWN - 1; m >= 0; m--) {
+          out[key].push({ hours: monthTotal(log, m, key), label: monthLabel(m) });
+        }
+      } else if (mode === 'YEAR') {
+        for (const year of years) {
+          out[key].push({ hours: yearTotal(log, year, key), label: String(year) });
+        }
       }
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userState.screenTimeLog]);
+  }, [log, mode, years]);
+
+  const cap = mode === 'WEEK' ? WEEKLY_CAP_HOURS : mode === 'MONTH' ? MONTHLY_CAP_HOURS : YEARLY_CAP_HOURS;
+  const trendCaption =
+    mode === 'WEEK' ? 'Oldest → this week, left to right.' :
+    mode === 'MONTH' ? 'Oldest → this month, left to right.' :
+    mode === 'YEAR' ? 'Oldest → this year, left to right.' :
+    'Every hour ever logged, per platform.';
 
   return (
     <div className="bg-dark-card border border-white/10 rounded-3xl p-5 space-y-5">
@@ -157,28 +237,56 @@ export const ContaminationTracker: React.FC<{
         })}
       </div>
 
-      <div className="space-y-3 pt-3 border-t border-white/5">
-        <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Week Over Week</span>
-        {PLATFORMS.map(({ key, label, icon }) => (
-          <div key={key} className="flex items-center gap-3">
-            <div className="w-14 flex items-center gap-1 flex-shrink-0">
-              {icon}
-              <span className="text-[8px] text-gray-600 uppercase tracking-wide">{label}</span>
-            </div>
-            <div className="flex items-end gap-1.5">
-              {weeklyByPlatform[key].map((hours, i) => {
-                const isThisWeek = i === WEEKS_SHOWN - 1;
-                const ratio = Math.min(1, hours / WEEKLY_CAP_HOURS);
-                return (
-                  <div key={i} className={isThisWeek ? 'opacity-100' : 'opacity-70'}>
-                    <Vial ratio={ratio} size={22} />
-                  </div>
-                );
-              })}
-            </div>
+      <div className="space-y-4 pt-3 border-t border-white/5">
+        <div className="flex bg-black/40 border border-white/5 rounded-xl p-1">
+          {(['WEEK', 'MONTH', 'YEAR', 'ALL'] as TrendMode[]).map(m => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all ${mode === m ? 'bg-brand text-white shadow' : 'text-gray-500 hover:text-white'}`}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+
+        {mode === 'ALL' ? (
+          <div className="grid grid-cols-3 gap-3">
+            {PLATFORMS.map(({ key, label, icon }) => {
+              const hours = allTimeTotal(log, key);
+              const ratio = Math.min(1, hours / ALL_TIME_CAP_HOURS);
+              return (
+                <div key={key} className="flex flex-col items-center gap-2">
+                  {icon}
+                  <Vial ratio={ratio} size={40} />
+                  <span className="text-xs font-black italic tabular-nums text-white">{hours}h</span>
+                  <span className="text-[8px] text-gray-600 uppercase tracking-wide">{label}</span>
+                </div>
+              );
+            })}
           </div>
-        ))}
-        <p className="text-[9px] text-gray-700">Oldest &rarr; this week, left to right.</p>
+        ) : (
+          PLATFORMS.map(({ key, label, icon }) => (
+            <div key={key} className="flex items-center gap-3">
+              <div className="w-14 flex items-center gap-1 flex-shrink-0">
+                {icon}
+                <span className="text-[8px] text-gray-600 uppercase tracking-wide">{label}</span>
+              </div>
+              <div className="flex items-end gap-1.5 overflow-x-auto no-scrollbar">
+                {buckets[key].map((bucket, i) => {
+                  const isLast = i === buckets[key].length - 1;
+                  const ratio = Math.min(1, bucket.hours / cap);
+                  return (
+                    <div key={i} className={`flex-shrink-0 ${isLast ? 'opacity-100' : 'opacity-70'}`} title={`${bucket.label}: ${bucket.hours}h`}>
+                      <Vial ratio={ratio} size={22} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))
+        )}
+        <p className="text-[9px] text-gray-700">{trendCaption}</p>
       </div>
     </div>
   );

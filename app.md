@@ -45,9 +45,11 @@ The daily loop, and where every session starts.
 - **Contamination Tracker** — self-reported YouTube/Twitch/X usage, one tap of a platform's logo per
   hour used. Each platform gets its own isometric glass vial that starts clear and turns murkier as
   today's hours climb toward a 6-hour cap; a small undo arrow appears once you've logged anything, in
-  case of a mis-tap. Below that, a week-over-week row per platform (last 6 rolling 7-day windows,
-  oldest to newest) shows the trend as vials, so clearing it out of your system is visible over time.
-  Replaces the automatic browser-extension tracker, paused for now — see `extension/README.md`.
+  case of a mis-tap. Below that, a WEEK / MONTH / YEAR / ALL toggle switches the trend row between
+  granularities — 6 rolling weeks, 6 calendar months, one vial per year the account has data for, or
+  (for ALL) a single lifetime vial per platform — so clearing it out of your system stays visible
+  whether you're checking in daily or looking back over a year. Replaces the automatic
+  browser-extension tracker, paused for now — see `extension/README.md`.
 - **Take a Break** — toggles maintenance mode for today, which does not break the streak but greys
   out the terminal and marks the day as a rest day on the heatmap instead of a zero.
 
