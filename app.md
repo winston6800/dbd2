@@ -56,7 +56,7 @@ The daily loop, and where every session starts.
   out the terminal and marks the day as a rest day on the heatmap instead of a zero.
 
 ### Feed
-**Value** sits above the feed: a simple skills list — type a skill, hit enter or the + button, it
+**Valuable** sits above the feed: a simple skills list — type a skill, hit enter or the + button, it
 becomes a chip with a remove control. Case-insensitive de-duped (adding "react" when "React" is
 already there is a no-op). Deliberately minimal for now; the point is a running, self-owned record of
 what you can build, not a full portfolio.

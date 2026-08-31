@@ -84,7 +84,7 @@ const ActivityCard: React.FC<{
 };
 
 /**
- * Value: a simple list of skills you have — proof of what you can build
+ * Valuable: a simple list of skills you have — proof of what you can build
  * yourself, independent of anyone's permission to hire you for it. Kept
  * deliberately simple for now: add a skill, remove a skill, nothing more.
  */
@@ -104,7 +104,7 @@ const ValueCard: React.FC<{
     <div className="bg-dark-card border border-brand/20 rounded-3xl p-5 space-y-4">
       <div className="flex items-center gap-2">
         <Gem size={14} className="text-brand" />
-        <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Value</h3>
+        <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Valuable</h3>
       </div>
       <p className="text-[10px] text-gray-600 -mt-2">Skills you have. What you can build yourself, no permission needed.</p>
 
