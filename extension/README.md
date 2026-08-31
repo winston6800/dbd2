@@ -1,10 +1,16 @@
 # DeadByDefault Screen Time
 
+**Paused.** The Command tab's screen-time card is self-reported now (the
+Contamination Tracker — tap a platform's logo, one tap per hour) instead of
+reading from this extension. This code and its API endpoint still work and
+aren't going anywhere, in case automatic tracking comes back later — the
+rest of this doc is unchanged.
+
 A small browser extension that tracks time spent actually watching YouTube
 (`/watch`, `/shorts`), Twitch (any channel/VOD page, not the homepage), or
 using X/Twitter generally (a feed has no single "watch" page the way a video
-does, so any page beyond login/marketing counts), and reports it into your
-DeadByDefault streak — the Command tab's **Screen Time Today** card.
+does, so any page beyond login/marketing counts), and reported it into your
+DeadByDefault streak — the Command tab's old **Screen Time Today** card.
 
 It only counts time while the tab is the *active* tab in the *focused*
 window and the system isn't idle or locked, checked every minute. Background

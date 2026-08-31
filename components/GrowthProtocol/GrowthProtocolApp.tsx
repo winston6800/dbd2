@@ -21,8 +21,7 @@ import { GroupsScreen } from './GroupsScreen';
 import { FeedScreen } from './FeedScreen';
 import { DiscoveryScreen } from './DiscoveryScreen';
 import { AnalyticsDashboard } from '../Analytics/AnalyticsDashboard';
-import { ScreenTimeCard } from './ScreenTimeCard';
-import { ScreenTimeSyncCard } from './ScreenTimeSyncCard';
+import { ContaminationTracker, type ScreenTimePlatform } from './ContaminationTracker';
 import { fetchJournalEntries, saveJournalEntry as syncJournalEntry } from '../../lib/growth/journal';
 import { track } from '../../lib/analytics';
 import { useAuth } from '../../lib/auth';
@@ -233,6 +232,28 @@ export const GrowthProtocolApp: React.FC = () => {
     if (userId) void syncJournalEntry(userId, date, text);
   };
 
+  const logScreenTime = (platform: ScreenTimePlatform) => {
+    const today = new Date().toLocaleDateString('en-CA');
+    setUserState(prev => {
+      const log = { ...(prev.screenTimeLog || {}) };
+      const day = { ...(log[today] || { youtube: 0, twitch: 0, x: 0 }) };
+      day[platform] = day[platform] + 1;
+      log[today] = day;
+      return { ...prev, screenTimeLog: log };
+    });
+  };
+
+  const undoScreenTime = (platform: ScreenTimePlatform) => {
+    const today = new Date().toLocaleDateString('en-CA');
+    setUserState(prev => {
+      const log = { ...(prev.screenTimeLog || {}) };
+      const day = { ...(log[today] || { youtube: 0, twitch: 0, x: 0 }) };
+      day[platform] = Math.max(0, day[platform] - 1);
+      log[today] = day;
+      return { ...prev, screenTimeLog: log };
+    });
+  };
+
   const simulateData = (daysCount: number) => {
     const datesToAdd: string[] = [];
     const uvsToAdd: Record<string, number> = {};
@@ -289,13 +310,14 @@ export const GrowthProtocolApp: React.FC = () => {
       <div className="relative min-h-full">
         {screen === AppScreen.BASE && (
           <BaseHub
-            userId={userId}
             userState={userState}
             onUpdateLoops={updateDailyLoops}
             onSetHonorVow={handleSetHonorVow}
             onUpdateWebsite={updateWebsite}
             onUpdateObjective={updateGrowthObjective}
             onUpdateTheme={updateHeatmapTheme}
+            onLogScreenTime={logScreenTime}
+            onUndoScreenTime={undoScreenTime}
             onToggleInfra={(active) => {
               const today = new Date().toLocaleDateString('en-CA');
               setUserState(p => ({
@@ -451,15 +473,16 @@ export const GrowthProtocolApp: React.FC = () => {
 };
 
 const BaseHub: React.FC<{
-  userId: string | null | undefined,
   userState: UserState,
   onUpdateLoops: (delta: number) => void,
   onSetHonorVow: (shipped: boolean, note?: string) => void,
   onUpdateWebsite: (url: string) => void,
   onUpdateObjective: (obj: string) => void,
   onUpdateTheme: (themeId: string) => void,
-  onToggleInfra: (active: boolean) => void
-}> = ({ userId, userState, onUpdateLoops, onSetHonorVow, onUpdateWebsite, onUpdateObjective, onUpdateTheme, onToggleInfra }) => {
+  onToggleInfra: (active: boolean) => void,
+  onLogScreenTime: (platform: ScreenTimePlatform) => void,
+  onUndoScreenTime: (platform: ScreenTimePlatform) => void
+}> = ({ userState, onUpdateLoops, onSetHonorVow, onUpdateWebsite, onUpdateObjective, onUpdateTheme, onToggleInfra, onLogScreenTime, onUndoScreenTime }) => {
   const [showLogConfirm, setShowLogConfirm] = useState(false);
   const [shipNote, setShipNote] = useState('');
   const [showBreakConfirm, setShowBreakConfirm] = useState(false);
@@ -676,7 +699,7 @@ const BaseHub: React.FC<{
         </div>
       </div>
 
-      <ScreenTimeCard userId={userId} />
+      <ContaminationTracker userState={userState} onLog={onLogScreenTime} onUndo={onUndoScreenTime} />
 
       <div className="flex justify-center pt-2">
         <button onClick={() => setShowBreakConfirm(true)} className={`px-8 py-3 rounded-full border text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center space-x-2 shadow-2xl ${userState.isOnMaintenance ? 'bg-indigo-900 border-indigo-700 text-white' : 'bg-white/5 border-white/10 text-gray-500 hover:text-indigo-400/80'}`}>
@@ -956,8 +979,6 @@ const ProfileScreen: React.FC<{ userId: string | null | undefined; userState: Us
           <p className="text-[9px] text-gray-500 mt-1">Share this link so others can follow your progress</p>
         </div>
       </div>
-
-      <ScreenTimeSyncCard userId={userId} />
 
       <div className="flex flex-col">
         <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">Field Analytics</h2>

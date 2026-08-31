@@ -31,6 +31,11 @@ export interface UserState {
   dailyShipped: Record<string, boolean>; // Honor code checkmarks
   dailyShipNote?: Record<string, string>; // Optional "what did you ship" note
   journalEntries?: Record<string, string>; // Self-respect journal, keyed by date
+  // Self-reported platform usage, keyed by date. Each tap of a platform's
+  // logo on Command logs one hour — see components/GrowthProtocol/
+  // ContaminationTracker.tsx. Replaces the browser-extension-based
+  // automatic tracker (extension/, paused for now).
+  screenTimeLog?: Record<string, { youtube: number; twitch: number; x: number }>;
   stats: UserStats;
   achievements: Achievement[];
   currentUvs: number;

@@ -42,9 +42,12 @@ The daily loop, and where every session starts.
 - **Growth Terminal** — +/- buttons logging today's loop count, and the **Honor Code Entry** button:
   a confirmation modal asking whether the user actually shipped something today, with an optional
   note. Marking it kept (or later revoking it) recalculates the streak immediately.
-- **Screen Time Today** — today's YouTube, Twitch, and X minutes, reported automatically by the
-  companion browser extension (`extension/`) rather than typed in. Polls every 30 seconds; shows
-  "Nothing synced yet" until the extension is installed and paired via the code on Profile.
+- **Contamination Tracker** — self-reported YouTube/Twitch/X usage, one tap of a platform's logo per
+  hour used. Each platform gets its own isometric glass vial that starts clear and turns murkier as
+  today's hours climb toward a 6-hour cap; a small undo arrow appears once you've logged anything, in
+  case of a mis-tap. Below that, a week-over-week row per platform (last 6 rolling 7-day windows,
+  oldest to newest) shows the trend as vials, so clearing it out of your system is visible over time.
+  Replaces the automatic browser-extension tracker, paused for now — see `extension/README.md`.
 - **Take a Break** — toggles maintenance mode for today, which does not break the streak but greys
   out the terminal and marks the day as a rest day on the heatmap instead of a zero.
 
@@ -73,10 +76,8 @@ unrelated business metrics (signups, funnel, MRR) and still lives there for admi
 
 ### Profile
 Display name (editable, used everywhere the person appears to others) and a **Copy follow link**
-button. Below that, **Screen Time Sync**: a per-account pairing code for the browser extension, with
-a copy button and a regenerate button (regenerating disconnects whatever old copy of the extension
-was using the previous code). Below that, the same heatmap as Command but zoomable: Week / Month /
-Year / All, with a year picker for the "All" view.
+button. Below that, the same heatmap as Command but zoomable: Week / Month / Year / All, with a year
+picker for the "All" view.
 
 ## Interactions
 
@@ -102,7 +103,7 @@ responsive classes give for free.
 ```
 UserState: { defaultKpi, websiteUrl?, growthObjective?, heatmapTheme?, streak, growthDates[], dailyUvs,
              dailyGrowthActions, dailyInfrastructureFocus, dailyShipped, dailyShipNote?, journalEntries?,
-             stats, achievements[], currentUvs, isOnMaintenance, minThreshold }
+             screenTimeLog?, stats, achievements[], currentUvs, isOnMaintenance, minThreshold }
 ```
 
 Persisted to `localStorage` under `dbd_state_v1:<userId>` after every change and restored on mount.

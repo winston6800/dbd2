@@ -124,28 +124,24 @@ See [app.md](./app.md) for behaviour.
 
 ## Screen time tracking
 
-A companion browser extension (`extension/`, Manifest V3, Chrome/Edge) tracks time actually spent
-watching YouTube or Twitch, or using X/Twitter — active tab, focused window, system not idle — and
-reports it into the Command tab's **Screen Time Today** card. It is not published to a web store;
-load it unpacked. See [extension/README.md](./extension/README.md) for install steps.
+The Command tab's **Contamination Tracker** is self-reported: tapping a platform's logo (YouTube,
+Twitch, X) logs one hour against today, filling an isometric glass vial that starts clear and turns
+murkier as the day's hours climb — plus a week-over-week row per platform so the trend is visible
+over time. See `components/GrowthProtocol/ContaminationTracker.tsx`; the data lives on
+`UserState.screenTimeLog`, stored the same device-local way as the rest of growth data (see State in
+[app.md](./app.md)).
+
+This replaces an earlier automatic tracker — a companion browser extension (`extension/`, Manifest V3)
+that watched the active tab and reported minutes via a synced sync-token endpoint. That code is paused,
+not deleted: it still works (see [extension/README.md](./extension/README.md)) and `/api/track-watch-time`
+is still live, in case automatic tracking comes back later.
 
 | Piece | File |
 |---|---|
-| Extension: tracking + sync heartbeat | `extension/background.js` |
-| Extension: popup (today's minutes, pairing) | `extension/popup.html`, `popup.js` |
-| Sync-token generation (Profile tab) | `lib/growth/screenTime.ts` |
-| Today's totals card (Command tab) | `components/GrowthProtocol/ScreenTimeCard.tsx` |
-| Pairing-code card (Profile tab) | `components/GrowthProtocol/ScreenTimeSyncCard.tsx` |
-| Write endpoint, authenticated by sync token | `api/track-watch-time.ts` |
+| Extension: tracking + sync heartbeat (paused) | `extension/background.js` |
+| Extension: popup (paused) | `extension/popup.html`, `popup.js` |
+| Write endpoint, authenticated by sync token (paused) | `api/track-watch-time.ts` |
 | `sync_tokens` + `watch_time` tables, RLS, atomic increment | `supabase/migrations/006_watch_time.sql` |
-
-The extension has no Supabase session of its own — a background service worker can't sign in
-interactively — so it authenticates with an opaque per-account token instead of a JWT. The token is
-generated and read entirely client-side against `sync_tokens` (RLS scopes it to `auth.uid()`, no
-server endpoint needed); `/api/track-watch-time` looks it up with the service role key to learn whose
-`watch_time` row to increment, the same "never trust an id from the request, verify identity first"
-pattern the checkout and billing-portal endpoints use for Supabase sessions. Regenerating the code
-from Profile immediately disconnects whatever old copy of the extension was using it.
 
 ## Testing the subscription end to end
 
