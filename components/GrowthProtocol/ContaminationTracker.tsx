@@ -1,5 +1,5 @@
 import React, { useId, useState } from 'react';
-import { Youtube, Twitch, X, EyeOff, RotateCcw } from 'lucide-react';
+import { Youtube, Twitch, X, Skull, RotateCcw } from 'lucide-react';
 import type { UserState } from '../../lib/growth/types';
 
 export type ScreenTimePlatform = 'youtube' | 'twitch' | 'x' | 'porn';
@@ -7,16 +7,23 @@ type Period = 'DAY' | 'WEEK' | 'MONTH' | 'YEAR' | 'ALL';
 
 interface Category {
   key: ScreenTimePlatform;
-  label: string;
+  label: string; // shown under the vial; empty renders no caption
   unit: string; // appended straight after the number, e.g. "3h" or "3x"
   icon: React.ReactNode;
+  logTitle: string;
+  undoTitle: string;
 }
 
+/**
+ * The fourth category is deliberately unlabeled — a skull, not a word — so
+ * nothing on screen names what it tracks. Hover tooltips stay generic for
+ * the same reason.
+ */
 const CATEGORIES: Category[] = [
-  { key: 'youtube', label: 'YouTube', unit: 'h', icon: <Youtube size={16} className="text-red-500" /> },
-  { key: 'twitch', label: 'Twitch', unit: 'h', icon: <Twitch size={16} className="text-purple-400" /> },
-  { key: 'x', label: 'X', unit: 'h', icon: <X size={16} className="text-gray-300" /> },
-  { key: 'porn', label: 'Porn', unit: 'x', icon: <EyeOff size={16} className="text-slate-400" /> },
+  { key: 'youtube', label: 'YouTube', unit: 'h', icon: <Youtube size={16} className="text-red-500" />, logTitle: 'Log an hour of YouTube', undoTitle: 'Undo one hour of YouTube' },
+  { key: 'twitch', label: 'Twitch', unit: 'h', icon: <Twitch size={16} className="text-purple-400" />, logTitle: 'Log an hour of Twitch', undoTitle: 'Undo one hour of Twitch' },
+  { key: 'x', label: 'X', unit: 'h', icon: <X size={16} className="text-gray-300" />, logTitle: 'Log an hour of X', undoTitle: 'Undo one hour of X' },
+  { key: 'porn', label: '', unit: 'x', icon: <Skull size={16} className="text-gray-400" />, logTitle: 'Log a use', undoTitle: 'Undo one use' },
 ];
 
 /**
@@ -164,7 +171,7 @@ export const ContaminationTracker: React.FC<{
       </div>
 
       <div className="grid grid-cols-4 gap-2">
-        {CATEGORIES.map(({ key, label, unit, icon }) => {
+        {CATEGORIES.map(({ key, label, unit, icon, logTitle, undoTitle }) => {
           const total = periodTotal(log, period, key);
           const cap = unit === 'h' ? HOUR_CAPS[period] : COUNT_CAPS[period];
           const ratio = Math.min(1, total / cap);
@@ -173,7 +180,7 @@ export const ContaminationTracker: React.FC<{
               <button
                 onClick={() => onLog(key)}
                 className="w-9 h-9 rounded-xl bg-black/50 border border-white/10 flex items-center justify-center hover:border-white/30 active:scale-90 transition-all"
-                title={unit === 'h' ? `Log an hour of ${label}` : `Log a use of ${label}`}
+                title={logTitle}
               >
                 {icon}
               </button>
@@ -184,13 +191,13 @@ export const ContaminationTracker: React.FC<{
                   <button
                     onClick={() => onUndo(key)}
                     className="text-gray-600 hover:text-gray-400"
-                    title={unit === 'h' ? `Undo one hour of ${label}` : `Undo one use of ${label}`}
+                    title={undoTitle}
                   >
                     <RotateCcw size={9} />
                   </button>
                 )}
               </div>
-              <span className="text-[8px] text-gray-600 uppercase tracking-wide">{label}</span>
+              <span className="text-[8px] text-gray-600 uppercase tracking-wide">{label || ' '}</span>
             </div>
           );
         })}
