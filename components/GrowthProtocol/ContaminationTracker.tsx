@@ -21,7 +21,7 @@ interface Category {
  */
 const CATEGORIES: Category[] = [
   { key: 'youtube', label: 'YouTube', unit: 'h', icon: <Youtube size={16} className="text-red-500" />, logTitle: 'Log an hour of YouTube', undoTitle: 'Undo one hour of YouTube' },
-  { key: 'twitch', label: 'Twitch', unit: 'h', icon: <Twitch size={16} className="text-purple-400" />, logTitle: 'Log an hour of Twitch', undoTitle: 'Undo one hour of Twitch' },
+  { key: 'twitch', label: 'so1octrl', unit: 'h', icon: <Twitch size={16} className="text-purple-400" />, logTitle: 'Log an hour of so1octrl', undoTitle: 'Undo one hour of so1octrl' },
   { key: 'x', label: 'X', unit: 'h', icon: <X size={16} className="text-gray-300" />, logTitle: 'Log an hour of X', undoTitle: 'Undo one hour of X' },
   { key: 'porn', label: '', unit: 'x', icon: <Skull size={16} className="text-gray-400" />, logTitle: 'Log a use', undoTitle: 'Undo one use' },
 ];
