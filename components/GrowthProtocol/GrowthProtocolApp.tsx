@@ -23,6 +23,7 @@ import { DiscoveryScreen } from './DiscoveryScreen';
 import { AnalyticsDashboard } from '../Analytics/AnalyticsDashboard';
 import { ScreenTimeCard } from './ScreenTimeCard';
 import { ScreenTimeSyncCard } from './ScreenTimeSyncCard';
+import { fetchJournalEntries, saveJournalEntry as syncJournalEntry } from '../../lib/growth/journal';
 import { track } from '../../lib/analytics';
 import { useAuth } from '../../lib/auth';
 import { RefreshCw, X, Flame, Calendar, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, Coffee, Moon, ArrowUp, Edit3, Globe, Zap, UserPlus, Copy, Heart } from 'lucide-react';
@@ -96,6 +97,18 @@ export const GrowthProtocolApp: React.FC = () => {
   useEffect(() => {
     saveUserState(userId, userState);
   }, [userId, userState]);
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    fetchJournalEntries(userId).then(remote => {
+      if (cancelled || Object.keys(remote).length === 0) return;
+      // Remote wins per-date (it's the cross-device source of truth); any
+      // date only present locally (written offline, not yet synced) is kept.
+      setUserState(prev => ({ ...prev, journalEntries: { ...prev.journalEntries, ...remote } }));
+    });
+    return () => { cancelled = true; };
+  }, [userId]);
 
   useEffect(() => {
     const name = getDisplayName(userId);
@@ -217,6 +230,7 @@ export const GrowthProtocolApp: React.FC = () => {
       else delete entries[date];
       return { ...prev, journalEntries: entries };
     });
+    if (userId) void syncJournalEntry(userId, date, text);
   };
 
   const simulateData = (daysCount: number) => {

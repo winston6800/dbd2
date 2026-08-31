@@ -65,8 +65,10 @@ joins with a live-updating snapshot of their state. Also lists who you follow (v
 ### Capacity
 The Capacity Journal: one free-text entry per day answering "what did you do today that you give
 yourself self respect for?" Today's entry autosaves as you type (600ms after you stop); past entries
-are read-only, newest first — editing history isn't supported, same as growth data elsewhere. Not to
-be confused with the admin analytics dashboard behind the header's **Analytics** link, which is
+are read-only, newest first — editing history isn't supported, same as growth data elsewhere. Unlike
+the rest of `UserState`, entries also sync through `journal_entries` in Supabase (RLS-scoped to the
+signed-in user), so a day written on one device shows up on another — see `lib/growth/journal.ts`.
+Not to be confused with the admin analytics dashboard behind the header's **Analytics** link, which is
 unrelated business metrics (signups, funnel, MRR) and still lives there for admins.
 
 ### Profile
@@ -108,7 +110,9 @@ Groups (`dbd_groups_v2:<userId>`), following (`dbd_following_v1:<userId>`), kudo
 (`dbd_kudos_v1:<userId>`), the discovery link list
 (`dbd_discovery_list_v1:<userId>`), and the display name (`dbd_display_name:<userId>`) are separate
 keys, all scoped the same way — switching accounts on a shared device never leaks one person's data
-into another's. See `lib/growth/storage.ts`.
+into another's. See `lib/growth/storage.ts`. `journalEntries` is the one field that also lives in
+Supabase (`journal_entries`, RLS-scoped to `auth.uid()`) rather than staying purely device-local — on
+mount the app fetches it and merges it in, remote winning per-date. See `lib/growth/journal.ts`.
 
 ## Streak math
 
