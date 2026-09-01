@@ -71,7 +71,11 @@ follow link pasted into **Add follow link**. Search filters by name.
 
 ### Groups
 Create a group to get a shareable join link (`?join=<base64>`); anyone who opens it and enters a name
-joins with a live-updating snapshot of their state. Also lists who you follow (via a similar
+joins with a live-updating snapshot of their state. Each group also has **Group Activities**: a
+shared default feed — add a line of text describing something the group is doing together (e.g.
+"Ship together every Friday"), remove it later. It rides along in the same join link as membership,
+so anyone who joins or re-opens the link sees it — the same eventually-consistent, link-based sync
+the rest of Groups already uses, not a real-time shared list. Also lists who you follow (via a similar
 `?follow=<base64>` link from their Profile tab), with an unfollow control.
 
 ### Capacity

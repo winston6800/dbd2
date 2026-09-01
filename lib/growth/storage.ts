@@ -98,6 +98,7 @@ export function createGroup(userId: UserId, name: string, creatorName: string, c
     name,
     members: [{ id: memberId, name: creatorName, userState: creatorState }],
     createdAt: new Date().toISOString(),
+    activities: [],
   };
   const groups = getGroups(userId);
   groups[id] = group;
@@ -121,12 +122,12 @@ export function deleteGroup(userId: UserId, id: string): void {
 
 /** Encode group for shareable URL - base64 JSON */
 export function encodeGroupForUrl(group: Group): string {
-  const payload = { id: group.id, name: group.name, members: group.members };
+  const payload = { id: group.id, name: group.name, members: group.members, activities: group.activities || [] };
   return btoa(encodeURIComponent(JSON.stringify(payload)));
 }
 
 /** Decode group from URL param */
-export function decodeGroupFromUrl(code: string): { id: string; name: string; members: GroupMember[] } | null {
+export function decodeGroupFromUrl(code: string): { id: string; name: string; members: GroupMember[]; activities?: string[] } | null {
   try {
     const decoded = decodeURIComponent(atob(code.trim()));
     return JSON.parse(decoded);

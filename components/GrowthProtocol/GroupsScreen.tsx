@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Users, Plus, Link2, Copy, Check, X, Flame, CheckCircle, Coffee, UserPlus } from 'lucide-react';
+import { Users, Plus, Link2, Copy, Check, X, Flame, CheckCircle, Coffee, UserPlus, ListChecks } from 'lucide-react';
 import type { Group, FollowedPerson, UserState } from '../../lib/growth/types';
-import { createGroup, getGroups, getJoinLink, removeFollowed, getFollowing } from '../../lib/growth/storage';
+import { createGroup, getGroups, getJoinLink, removeFollowed, getFollowing, updateGroup } from '../../lib/growth/storage';
 import { calculateCurrentStreak } from '../../lib/growth/utils';
 
 interface GroupsScreenProps {
@@ -49,6 +49,76 @@ const MemberCard: React.FC<{
           </button>
         )}
       </div>
+    </div>
+  );
+};
+
+/**
+ * A shared, default feed of activities the group is doing together (e.g.
+ * "Ship together every Friday") — distinct from each member's personal
+ * shipped/loop/break activity on the Feed tab. Rides along in the group's
+ * join link like membership does, so it stays in sync the same
+ * eventually-consistent way the rest of Groups already works.
+ */
+const GroupActivities: React.FC<{
+  userId: string | null | undefined;
+  group: Group;
+  onGroupsChange: (groups: Record<string, Group>) => void;
+}> = ({ userId, group, onGroupsChange }) => {
+  const [draft, setDraft] = useState('');
+  const activities = group.activities || [];
+
+  const addActivity = () => {
+    const trimmed = draft.trim();
+    if (!trimmed) return;
+    updateGroup(userId, group.id, { activities: [...activities, trimmed] });
+    onGroupsChange(getGroups(userId));
+    setDraft('');
+  };
+
+  const removeActivity = (index: number) => {
+    updateGroup(userId, group.id, { activities: activities.filter((_, i) => i !== index) });
+    onGroupsChange(getGroups(userId));
+  };
+
+  return (
+    <div className="space-y-3 pt-3 border-t border-white/5">
+      <h5 className="text-[9px] font-black text-gray-500 uppercase tracking-widest flex items-center space-x-2">
+        <ListChecks size={12} />
+        <span>Group Activities</span>
+      </h5>
+      <div className="flex items-center space-x-2">
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && addActivity()}
+          placeholder="Add an activity you're doing together..."
+          className="flex-1 bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-white text-xs font-medium placeholder:text-gray-600 outline-none focus:border-brand/50"
+        />
+        <button
+          onClick={addActivity}
+          disabled={!draft.trim()}
+          className="w-9 h-9 flex-shrink-0 rounded-xl bg-brand text-white flex items-center justify-center disabled:opacity-30"
+          title="Add activity"
+        >
+          <Plus size={16} />
+        </button>
+      </div>
+      {activities.length === 0 ? (
+        <p className="text-[10px] text-gray-600">Nothing added yet.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {activities.map((activity, i) => (
+            <div key={i} className="flex items-center justify-between gap-2 bg-black/40 border border-white/5 rounded-xl px-3 py-2">
+              <span className="text-xs text-gray-300 font-medium">{activity}</span>
+              <button onClick={() => removeActivity(i)} className="text-gray-600 hover:text-gray-300 flex-shrink-0" title="Remove activity">
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -181,6 +251,7 @@ export const GroupsScreen: React.FC<GroupsScreenProps> = ({
                     <MemberCard key={m.id} name={m.name} userState={m.userState} />
                   ))}
                 </div>
+                <GroupActivities userId={userId} group={group} onGroupsChange={onGroupsChange} />
               </div>
             ))
         )}

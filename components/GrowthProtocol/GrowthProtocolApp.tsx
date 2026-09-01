@@ -89,7 +89,7 @@ export const GrowthProtocolApp: React.FC = () => {
   const [userState, setUserState] = useState<UserState>(() => getUserState(userId));
   const [groups, setGroups] = useState(() => getGroups(userId));
   const [following, setFollowing] = useState(() => getFollowing(userId));
-  const [joinModal, setJoinModal] = useState<{ id: string; name: string; members: import('../../lib/growth/types').GroupMember[] } | null>(null);
+  const [joinModal, setJoinModal] = useState<{ id: string; name: string; members: import('../../lib/growth/types').GroupMember[]; activities?: string[] } | null>(null);
   const [followModal, setFollowModal] = useState<{ name: string; userState: import('../../lib/growth/types').UserState } | null>(null);
   const [joinName, setJoinName] = useState('');
 
@@ -136,10 +136,10 @@ export const GrowthProtocolApp: React.FC = () => {
         const groups = getGroups(userId);
         const existing = groups[decoded.id];
         if (existing) {
-          updateGroup(userId, decoded.id, { members: decoded.members });
+          updateGroup(userId, decoded.id, { members: decoded.members, activities: decoded.activities });
           setGroups(getGroups(userId));
         } else {
-          setJoinModal({ id: decoded.id, name: decoded.name, members: decoded.members });
+          setJoinModal({ id: decoded.id, name: decoded.name, members: decoded.members, activities: decoded.activities });
         }
       }
       window.history.replaceState({}, '', window.location.pathname);
@@ -403,13 +403,14 @@ export const GrowthProtocolApp: React.FC = () => {
                     const allGroups = getGroups(userId);
                     const existing = allGroups[joinModal.id];
                     if (existing) {
-                      updateGroup(userId, joinModal.id, { members: updatedMembers });
+                      updateGroup(userId, joinModal.id, { members: updatedMembers, activities: joinModal.activities });
                     } else {
                       allGroups[joinModal.id] = {
                         id: joinModal.id,
                         name: joinModal.name,
                         members: updatedMembers,
                         createdAt: new Date().toISOString(),
+                        activities: joinModal.activities || [],
                       };
                       saveGroups(userId, allGroups);
                     }

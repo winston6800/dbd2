@@ -76,6 +76,10 @@ export interface Group {
   name: string;
   members: GroupMember[];
   createdAt: string;
+  // Shared list of activities the group is doing together, e.g. "Ship
+  // together every Friday". Rides along in the join link like members do —
+  // see encodeGroupForUrl/decodeGroupFromUrl.
+  activities?: string[];
 }
 
 export interface FollowedPerson {
