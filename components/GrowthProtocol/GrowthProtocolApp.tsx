@@ -22,11 +22,12 @@ import { FeedScreen } from './FeedScreen';
 import { DiscoveryScreen } from './DiscoveryScreen';
 import { AnalyticsDashboard } from '../Analytics/AnalyticsDashboard';
 import { ContaminationTracker, type ScreenTimePlatform } from './ContaminationTracker';
+import { PomodoroTimer } from './PomodoroTimer';
 import { fetchJournalEntries, saveJournalEntry as syncJournalEntry } from '../../lib/growth/journal';
 import { fetchRemoteState, saveRemoteState, mergeRemoteState } from '../../lib/growth/stateSync';
 import { track } from '../../lib/analytics';
 import { useAuth } from '../../lib/auth';
-import { RefreshCw, X, Flame, Calendar, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, Coffee, Moon, ArrowUp, Edit3, Globe, Zap, UserPlus, Copy, Heart } from 'lucide-react';
+import { RefreshCw, X, Flame, Calendar, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, Coffee, Moon, ArrowUp, Edit3, Globe, UserPlus, Copy, Heart } from 'lucide-react';
 import { HEATMAP_THEMES, getHeatmapTheme, rgbCss } from '../../lib/growth/themes';
 
 const getHeatmapColor = (uvs: number, isFocus: boolean | undefined, isShipped: boolean | undefined, themeRgb: [number, number, number]) => {
@@ -214,6 +215,26 @@ export const GrowthProtocolApp: React.FC = () => {
     });
   };
 
+  /** A completed 25-minute focus session — see PomodoroTimer. Marks today active for the streak, same as a logged loop. */
+  const logFocusSession = (minutes: number) => {
+    const today = new Date().toLocaleDateString('en-CA');
+    track('focus_session_completed');
+
+    setUserState(prev => {
+      const isAlreadyLoggedToday = prev.growthDates.includes(today);
+      const newDates = isAlreadyLoggedToday ? prev.growthDates : [...prev.growthDates, today];
+      const newFocusMinutes = { ...(prev.dailyFocusMinutes || {}), [today]: (prev.dailyFocusMinutes?.[today] || 0) + minutes };
+
+      return {
+        ...prev,
+        growthDates: newDates,
+        dailyFocusMinutes: newFocusMinutes,
+        streak: calculateCurrentStreak(newDates, prev.dailyInfrastructureFocus, prev.dailyShipped),
+        isOnMaintenance: false,
+      };
+    });
+  };
+
   const handleSetHonorVow = (shipped: boolean, note?: string) => {
     const today = new Date().toLocaleDateString('en-CA');
     if (shipped) track('honor_code_kept');
@@ -356,6 +377,7 @@ export const GrowthProtocolApp: React.FC = () => {
             onUpdateTheme={updateHeatmapTheme}
             onLogScreenTime={logScreenTime}
             onUndoScreenTime={undoScreenTime}
+            onLogFocusSession={logFocusSession}
             onToggleInfra={(active) => {
               const today = new Date().toLocaleDateString('en-CA');
               setUserState(p => ({
@@ -523,8 +545,9 @@ const BaseHub: React.FC<{
   onUpdateTheme: (themeId: string) => void,
   onToggleInfra: (active: boolean) => void,
   onLogScreenTime: (platform: ScreenTimePlatform) => void,
-  onUndoScreenTime: (platform: ScreenTimePlatform) => void
-}> = ({ userState, onUpdateLoops, onSetHonorVow, onUpdateWebsite, onUpdateObjective, onUpdateTheme, onToggleInfra, onLogScreenTime, onUndoScreenTime }) => {
+  onUndoScreenTime: (platform: ScreenTimePlatform) => void,
+  onLogFocusSession: (minutes: number) => void
+}> = ({ userState, onUpdateLoops, onSetHonorVow, onUpdateWebsite, onUpdateObjective, onUpdateTheme, onToggleInfra, onLogScreenTime, onUndoScreenTime, onLogFocusSession }) => {
   const [showLogConfirm, setShowLogConfirm] = useState(false);
   const [shipNote, setShipNote] = useState('');
   const [showBreakConfirm, setShowBreakConfirm] = useState(false);
@@ -571,6 +594,7 @@ const BaseHub: React.FC<{
   const theme = getHeatmapTheme(userState.heatmapTheme);
   const themeColor = rgbCss(theme.rgb);
   const objectiveLabel = userState.isOnMaintenance ? 'Break Day' : (userState.growthObjective || 'INCREASE DAILY UNIQUE VISITORS');
+  const todayFocusMinutes = userState.dailyFocusMinutes?.[todayStr] || 0;
 
   return (
     <div className="space-y-6 pb-20 animate-in fade-in duration-500">
@@ -586,18 +610,6 @@ const BaseHub: React.FC<{
         >
           <span className="text-xl font-black text-white italic tracking-tighter leading-none">{userState.streak}</span>
           <span className="text-[8px] font-black text-white/60 uppercase tracking-widest">STREAK</span>
-        </div>
-
-        <div className="absolute top-4 right-4 z-20 flex items-center space-x-1.5">
-          {HEATMAP_THEMES.map(t => (
-            <button
-              key={t.id}
-              onClick={() => onUpdateTheme(t.id)}
-              title={t.label}
-              className={`w-4 h-4 rounded-full border-2 transition-transform hover:scale-125 ${theme.id === t.id ? 'border-white scale-125' : 'border-white/20'}`}
-              style={{ backgroundColor: rgbCss(t.rgb) }}
-            />
-          ))}
         </div>
 
         <div className="flex flex-col items-center space-y-4 pt-10">
@@ -699,10 +711,19 @@ const BaseHub: React.FC<{
       <div className={`bg-gradient-to-br from-dark-accent to-black p-6 rounded-[32px] text-center space-y-6 border border-brand/20 shadow-2xl transition-all duration-500 ${userState.isOnMaintenance ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
         <div className="flex justify-between items-center">
           <h3 className="text-white font-black text-xl italic uppercase tracking-tighter">Growth Terminal</h3>
-          <div className="flex items-center space-x-1.5 bg-black px-3 py-1.5 rounded-full border border-brand/30">
-            <Zap size={12} className="text-brand" />
-            <span className="text-[10px] font-black text-brand">Live Volume</span>
-          </div>
+          <PomodoroTimer todayFocusMinutes={todayFocusMinutes} onComplete={onLogFocusSession} />
+        </div>
+
+        <div className="flex items-center justify-center space-x-2">
+          {HEATMAP_THEMES.map(t => (
+            <button
+              key={t.id}
+              onClick={() => onUpdateTheme(t.id)}
+              title={t.label}
+              className={`w-4 h-4 rounded-full border-2 transition-transform hover:scale-125 ${theme.id === t.id ? 'border-white scale-125' : 'border-white/20'}`}
+              style={{ backgroundColor: rgbCss(t.rgb) }}
+            />
+          ))}
         </div>
 
         <div className="flex flex-col items-center space-y-4">

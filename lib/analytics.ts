@@ -20,6 +20,7 @@ export type AnalyticsEvent =
   | 'subscription_active'
   | 'loop_logged'
   | 'honor_code_kept'
+  | 'focus_session_completed'
   | 'group_created'
   | 'person_followed';
 

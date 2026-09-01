@@ -34,14 +34,19 @@ The daily loop, and where every session starts.
 - **Growth Objective + Survival Pulse** — one combined card. An editable one-line goal (e.g.
   "INCREASE DAILY UNIQUE VISITORS", click to edit) sits above a 7-day heatmap; color interpolates
   from the chosen theme color at low volume to white-hot at high volume, with a checkmark overlay on
-  days the Honor Code was kept and today's cell ringed in the theme color. Six color-theme swatches
-  (top right of the card, `lib/growth/themes.ts`) recolor the streak badge, the "Growth Objective"
-  label, and the heatmap together — pick one to represent whatever this objective is, so a different
-  goal can look different. Hovering the card shows the objective name as a tooltip. An optional
-  website link sits below the heatmap.
+  days the Honor Code was kept and today's cell ringed in the theme color. Hovering the card shows the
+  objective name as a tooltip. An optional website link sits below the heatmap.
 - **Growth Terminal** — +/- buttons logging today's loop count, and the **Honor Code Entry** button:
   a confirmation modal asking whether the user actually shipped something today, with an optional
-  note. Marking it kept (or later revoking it) recalculates the streak immediately.
+  note. Marking it kept (or later revoking it) recalculates the streak immediately. Its header carries
+  the **Focus Timer** (`components/GrowthProtocol/PomodoroTimer.tsx`): a 25-minute countdown that
+  starts/pauses on tap, with a cancel (×) once a session is running. Only a session that runs all the
+  way to zero counts — pausing keeps your progress, but cancelling discards it, same
+  honesty-over-convenience spirit as Honor Code. A completed session logs its minutes to
+  `UserState.dailyFocusMinutes` and marks today active in `growthDates`, so focus time feeds the
+  streak exactly the way a logged loop does. Below the header, six color-theme swatches
+  (`lib/growth/themes.ts`) recolor the streak badge, the "Growth Objective" label, and the heatmap
+  together — pick one to represent whatever this objective is, so a different goal can look different.
 - **Contamination Tracker** — self-reported usage across four categories: YouTube, Twitch, and X
   (tap logs an hour) plus a fourth, unlabeled category — a skull icon, no caption, no named tooltip —
   for pornography, tracked by uses rather than hours since count is the meaningful number there. It's
@@ -116,7 +121,8 @@ responsive classes give for free.
 ```
 UserState: { defaultKpi, websiteUrl?, growthObjective?, heatmapTheme?, streak, growthDates[], dailyUvs,
              dailyGrowthActions, dailyInfrastructureFocus, dailyShipped, dailyShipNote?, journalEntries?,
-             screenTimeLog?, skills?, stats, achievements[], currentUvs, isOnMaintenance, minThreshold }
+             screenTimeLog?, dailyFocusMinutes?, skills?, stats, achievements[], currentUvs,
+             isOnMaintenance, minThreshold }
 ```
 
 Persisted to `localStorage` under `dbd_state_v1:<userId>` after every change and restored on mount —

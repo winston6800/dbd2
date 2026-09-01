@@ -32,7 +32,7 @@ export async function saveRemoteState(userId: string, state: UserState): Promise
     .upsert({ user_id: userId, state: toSave, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
 }
 
-const DATE_KEYED_KEYS = ['dailyUvs', 'dailyGrowthActions', 'dailyInfrastructureFocus', 'dailyShipped', 'dailyShipNote', 'screenTimeLog'] as const;
+const DATE_KEYED_KEYS = ['dailyUvs', 'dailyGrowthActions', 'dailyInfrastructureFocus', 'dailyShipped', 'dailyShipNote', 'screenTimeLog', 'dailyFocusMinutes'] as const;
 
 function dedupeCaseInsensitive(items: string[]): string[] {
   const seen = new Set<string>();
