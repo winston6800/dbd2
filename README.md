@@ -124,12 +124,13 @@ See [app.md](./app.md) for behaviour.
 
 ## Screen time tracking
 
-The Command tab's **Contamination Tracker** is self-reported: tapping a platform's logo (YouTube,
-Twitch, X) logs one hour against today, filling an isometric glass vial that starts clear and turns
-murkier as the day's hours climb — plus a week-over-week row per platform so the trend is visible
-over time. See `components/GrowthProtocol/ContaminationTracker.tsx`; the data lives on
-`UserState.screenTimeLog`, stored the same device-local way as the rest of growth data (see State in
-[app.md](./app.md)).
+The Command tab's **Contamination Tracker** is self-reported: tapping a category's icon (YouTube,
+Twitch, X, plus a fourth deliberately unlabeled skull category) logs a unit against today — an hour
+for the platforms, a use for the skull one — filling that category's isometric glass vial, which
+starts clear and turns murkier as usage climbs. A DAY/WEEK/MONTH/YEAR/ALL toggle changes which window
+the same four vials are reading from. See `components/GrowthProtocol/ContaminationTracker.tsx`; the
+data lives on `UserState.screenTimeLog`, which now syncs across devices for a signed-in account like
+the rest of growth data (see State in [app.md](./app.md)).
 
 This replaces an earlier automatic tracker — a companion browser extension (`extension/`, Manifest V3)
 that watched the active tab and reported minutes via a synced sync-token endpoint. That code is paused,
@@ -317,9 +318,11 @@ Attribution is pinned at first contact and kept in `sessionStorage` — by the t
 - **3 days is short.** `customer.subscription.trial_will_end` fires ~3 days before the trial ends, so
   on a 3-day trial it lands almost immediately. The handler only logs it — if you want a "your trial
   ends tomorrow" email, that hook is where it goes, but the timing needs a longer trial to be useful.
-- **Growth data is local-only.** Streaks, groups, following and kudos live in `localStorage`, scoped
-  per signed-in user id. It survives switching accounts on a shared device but not switching devices —
-  moving it to a Supabase table is the natural next step now that every session is authenticated.
+- **Groups, following, and kudos are local-only.** They live in `localStorage`, scoped per signed-in
+  user id — survives switching accounts on a shared device but not switching devices. Groups and
+  following are link-based by design (see below), not account-owned, so this is closer to intentional
+  than a gap. Everything else on `UserState` (streaks, loops, screen time, skills, journal) now syncs
+  across devices for a signed-in account — see State in [app.md](./app.md).
 - **Groups and following work by link, not by account lookup.** Joining a group or following someone
   encodes their whole state into a URL param; there is no server-side directory to search. Fine at
   small scale, brittle if someone shares a stale link months later.

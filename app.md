@@ -119,14 +119,24 @@ UserState: { defaultKpi, websiteUrl?, growthObjective?, heatmapTheme?, streak, g
              screenTimeLog?, skills?, stats, achievements[], currentUvs, isOnMaintenance, minThreshold }
 ```
 
-Persisted to `localStorage` under `dbd_state_v1:<userId>` after every change and restored on mount.
-Groups (`dbd_groups_v2:<userId>`), following (`dbd_following_v1:<userId>`), kudos
-(`dbd_kudos_v1:<userId>`), the discovery link list
+Persisted to `localStorage` under `dbd_state_v1:<userId>` after every change and restored on mount —
+this is the fast, always-available local copy. Groups (`dbd_groups_v2:<userId>`), following
+(`dbd_following_v1:<userId>`), kudos (`dbd_kudos_v1:<userId>`), the discovery link list
 (`dbd_discovery_list_v1:<userId>`), and the display name (`dbd_display_name:<userId>`) are separate
 keys, all scoped the same way — switching accounts on a shared device never leaks one person's data
-into another's. See `lib/growth/storage.ts`. `journalEntries` is the one field that also lives in
-Supabase (`journal_entries`, RLS-scoped to `auth.uid()`) rather than staying purely device-local — on
-mount the app fetches it and merges it in, remote winning per-date. See `lib/growth/journal.ts`.
+into another's. See `lib/growth/storage.ts`. Groups themselves stay device/link-based by design, not
+account-synced — see Groups above.
+
+The rest of `UserState` also syncs across devices for a signed-in account, through two paths:
+`journalEntries` has its own table (`journal_entries`, RLS-scoped to `auth.uid()`) and its own sync
+in `lib/growth/journal.ts`. Everything else — streaks, loops, screen time, skills, settings — syncs as
+one JSONB blob in `user_state` (also RLS-scoped to `auth.uid()`), mirroring the same shape
+`dbd_state_v1` already holds rather than a normalized schema. On sign-in the app fetches that blob and
+merges it into local state (`lib/growth/stateSync.ts`'s `mergeRemoteState`): date-keyed logs merge
+per-date with remote winning on overlap but local-only dates kept (an offline write not yet synced);
+`growthDates`/`skills` union and dedupe since both devices can grow them independently; everything
+else — single-value settings like the objective, theme, streak — takes the remote value once fetched.
+After that first fetch, every change debounces a write-through to `user_state` 800ms after you stop.
 
 ## Streak math
 

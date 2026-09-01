@@ -23,6 +23,7 @@ import { DiscoveryScreen } from './DiscoveryScreen';
 import { AnalyticsDashboard } from '../Analytics/AnalyticsDashboard';
 import { ContaminationTracker, type ScreenTimePlatform } from './ContaminationTracker';
 import { fetchJournalEntries, saveJournalEntry as syncJournalEntry } from '../../lib/growth/journal';
+import { fetchRemoteState, saveRemoteState, mergeRemoteState } from '../../lib/growth/stateSync';
 import { track } from '../../lib/analytics';
 import { useAuth } from '../../lib/auth';
 import { RefreshCw, X, Flame, Calendar, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, Coffee, Moon, ArrowUp, Edit3, Globe, Zap, UserPlus, Copy, Heart } from 'lucide-react';
@@ -92,6 +93,7 @@ export const GrowthProtocolApp: React.FC = () => {
   const [joinModal, setJoinModal] = useState<{ id: string; name: string; members: import('../../lib/growth/types').GroupMember[]; activities?: string[] } | null>(null);
   const [followModal, setFollowModal] = useState<{ name: string; userState: import('../../lib/growth/types').UserState } | null>(null);
   const [joinName, setJoinName] = useState('');
+  const [remoteStateLoaded, setRemoteStateLoaded] = useState(false);
 
   useEffect(() => {
     saveUserState(userId, userState);
@@ -108,6 +110,28 @@ export const GrowthProtocolApp: React.FC = () => {
     });
     return () => { cancelled = true; };
   }, [userId]);
+
+  // Cross-device sync for the rest of UserState (streaks, loops, screen
+  // time, skills, ...). Fetch-and-merge first, and only start writing back
+  // once that's done — writing before the first read could clobber a
+  // richer remote state with this device's stale/default local copy.
+  useEffect(() => {
+    if (!userId) { setRemoteStateLoaded(false); return; }
+    let cancelled = false;
+    setRemoteStateLoaded(false);
+    fetchRemoteState(userId).then(remote => {
+      if (cancelled) return;
+      setUserState(prev => mergeRemoteState(prev, remote));
+      setRemoteStateLoaded(true);
+    });
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId || !remoteStateLoaded) return;
+    const id = setTimeout(() => { void saveRemoteState(userId, userState); }, 800);
+    return () => clearTimeout(id);
+  }, [userId, remoteStateLoaded, userState]);
 
   useEffect(() => {
     const name = getDisplayName(userId);
