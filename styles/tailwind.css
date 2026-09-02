@@ -12,6 +12,8 @@
 
   --animate-spin-slow: spin 8s linear infinite;
   --animate-pulse-slow: pulse-custom 4s ease-in-out infinite;
+  --animate-breathe: breathe 2.4s ease-in-out infinite;
+  --animate-hat-wobble: hat-wobble 2.4s ease-in-out infinite;
 }
 
 @keyframes pulse-custom {
@@ -21,6 +23,27 @@
   }
   50% {
     box-shadow: 0 0 30px rgba(225, 29, 72, 0.4);
+  }
+}
+
+/* The focus-session character's "breathing" while a session is running. */
+@keyframes breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.035);
+  }
+}
+
+@keyframes hat-wobble {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
   }
 }
 

@@ -66,6 +66,13 @@ describe('saveRemoteState', () => {
     expect(upserts[0].state.streak).toBe(3);
     expect(upserts[0].state).not.toHaveProperty('journalEntries');
   });
+
+  it('includes bits earned from focus sessions in the upsert', async () => {
+    upserts.length = 0;
+    const state = baseState({ bits: 75 });
+    await saveRemoteState('user-1', state);
+    expect(upserts[0].state.bits).toBe(75);
+  });
 });
 
 describe('mergeRemoteState', () => {
@@ -95,6 +102,13 @@ describe('mergeRemoteState', () => {
     const merged = mergeRemoteState(local, remote);
     expect(merged.streak).toBe(7);
     expect(merged.growthObjective).toBe('new objective');
+  });
+
+  it('takes the remote bits total on sync, e.g. after earning bits on another device', () => {
+    const local = baseState({ bits: 25 }); // this device earned one 25-minute session, not yet synced
+    const remote = baseState({ bits: 100 }); // another device's already-synced total
+    const merged = mergeRemoteState(local, remote);
+    expect(merged.bits).toBe(100);
   });
 
   it('always keeps journalEntries from local, never remote', () => {
