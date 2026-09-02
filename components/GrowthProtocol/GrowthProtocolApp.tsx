@@ -22,13 +22,25 @@ import { FeedScreen } from './FeedScreen';
 import { DiscoveryScreen } from './DiscoveryScreen';
 import { AnalyticsDashboard } from '../Analytics/AnalyticsDashboard';
 import { ContaminationTracker, type ScreenTimePlatform } from './ContaminationTracker';
-import { PomodoroTimer } from './PomodoroTimer';
+import { FocusSession } from './FocusSession';
+import { useFocusTimer } from '../../lib/growth/useFocusTimer';
 import { fetchJournalEntries, saveJournalEntry as syncJournalEntry } from '../../lib/growth/journal';
 import { fetchRemoteState, saveRemoteState, mergeRemoteState } from '../../lib/growth/stateSync';
 import { track } from '../../lib/analytics';
 import { useAuth } from '../../lib/auth';
-import { RefreshCw, X, Flame, Calendar, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, Coffee, Moon, ArrowUp, Edit3, Globe, UserPlus, Copy, Heart } from 'lucide-react';
+import { RefreshCw, X, Flame, Calendar, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, Coffee, Moon, ArrowUp, Edit3, Globe, UserPlus, Copy, Heart, Timer } from 'lucide-react';
 import { HEATMAP_THEMES, getHeatmapTheme, rgbCss } from '../../lib/growth/themes';
+
+function formatMinutes(totalMinutes: number): string {
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+  return `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`;
+}
+
+function formatClock(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
 
 const getHeatmapColor = (uvs: number, isFocus: boolean | undefined, isShipped: boolean | undefined, themeRgb: [number, number, number]) => {
   if (isFocus) return { backgroundColor: 'rgb(49, 46, 129)', border: '1px solid rgba(79, 70, 229, 0.4)', color: '#fff' };
@@ -215,7 +227,7 @@ export const GrowthProtocolApp: React.FC = () => {
     });
   };
 
-  /** A completed 25-minute focus session — see PomodoroTimer. Marks today active for the streak, same as a logged loop. */
+  /** A completed focus session of a chosen duration — see useFocusTimer/FocusSession. Marks today active for the streak, same as a logged loop, and pays out 1 bit per minute focused. */
   const logFocusSession = (minutes: number) => {
     const today = new Date().toLocaleDateString('en-CA');
     track('focus_session_completed');
@@ -229,6 +241,7 @@ export const GrowthProtocolApp: React.FC = () => {
         ...prev,
         growthDates: newDates,
         dailyFocusMinutes: newFocusMinutes,
+        bits: (prev.bits || 0) + minutes,
         streak: calculateCurrentStreak(newDates, prev.dailyInfrastructureFocus, prev.dailyShipped),
         isOnMaintenance: false,
       };
@@ -551,6 +564,8 @@ const BaseHub: React.FC<{
   const [showLogConfirm, setShowLogConfirm] = useState(false);
   const [shipNote, setShipNote] = useState('');
   const [showBreakConfirm, setShowBreakConfirm] = useState(false);
+  const [showFocusModal, setShowFocusModal] = useState(false);
+  const focusTimer = useFocusTimer(onLogFocusSession);
   const [isEditingWebsite, setIsEditingWebsite] = useState(false);
   const [isEditingObjective, setIsEditingObjective] = useState(false);
   const [tempWebsite, setTempWebsite] = useState(userState.websiteUrl || '');
@@ -711,7 +726,18 @@ const BaseHub: React.FC<{
       <div className={`bg-gradient-to-br from-dark-accent to-black p-6 rounded-[32px] text-center space-y-6 border border-brand/20 shadow-2xl transition-all duration-500 ${userState.isOnMaintenance ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
         <div className="flex justify-between items-center">
           <h3 className="text-white font-black text-xl italic uppercase tracking-tighter">Growth Terminal</h3>
-          <PomodoroTimer todayFocusMinutes={todayFocusMinutes} onComplete={onLogFocusSession} />
+          <button
+            onClick={() => setShowFocusModal(true)}
+            className="flex items-center space-x-1.5 bg-black px-3 py-1.5 rounded-full border border-brand/30 hover:border-brand/60 transition-colors"
+            title="Open focus timer"
+          >
+            <Timer size={12} className={`text-brand ${focusTimer.status !== 'idle' ? 'animate-pulse' : ''}`} />
+            <span className="text-[10px] font-black text-brand tabular-nums">
+              {focusTimer.status !== 'idle'
+                ? formatClock(focusTimer.secondsLeft)
+                : todayFocusMinutes > 0 ? `${formatMinutes(todayFocusMinutes)} today` : 'Focus Timer'}
+            </span>
+          </button>
         </div>
 
         <div className="flex items-center justify-center space-x-2">
@@ -840,6 +866,15 @@ const BaseHub: React.FC<{
             </div>
           </div>
         </div>
+      )}
+
+      {showFocusModal && (
+        <FocusSession
+          timer={focusTimer}
+          todayFocusMinutes={todayFocusMinutes}
+          totalBits={userState.bits || 0}
+          onClose={() => setShowFocusModal(false)}
+        />
       )}
     </div>
   );

@@ -30,11 +30,14 @@ export interface UserState {
   dailyInfrastructureFocus: Record<string, boolean>;
   dailyShipped: Record<string, boolean>; // Honor code checkmarks
   dailyShipNote?: Record<string, string>; // Optional "what did you ship" note
-  // Minutes logged by completed Pomodoro sessions (components/GrowthProtocol/
-  // PomodoroTimer.tsx), keyed by date. A completed session also marks that
-  // date active in growthDates, so focus time counts toward the streak the
-  // same way a logged loop does.
+  // Minutes logged by completed focus sessions (lib/growth/useFocusTimer.ts,
+  // components/GrowthProtocol/FocusSession.tsx), keyed by date. A completed
+  // session also marks that date active in growthDates, so focus time
+  // counts toward the streak the same way a logged loop does.
   dailyFocusMinutes?: Record<string, number>;
+  // Reward currency, 1 bit per minute of a completed focus session — a
+  // running lifetime total, not date-keyed. See useFocusTimer/FocusSession.
+  bits?: number;
   journalEntries?: Record<string, string>; // Self-respect journal, keyed by date
   // Self-reported usage, keyed by date. Each tap of a category's icon on
   // Command logs one unit — an hour for youtube/twitch/x, a use for porn —

@@ -39,12 +39,17 @@ The daily loop, and where every session starts.
 - **Growth Terminal** — +/- buttons logging today's loop count, and the **Honor Code Entry** button:
   a confirmation modal asking whether the user actually shipped something today, with an optional
   note. Marking it kept (or later revoking it) recalculates the streak immediately. Its header carries
-  the **Focus Timer** (`components/GrowthProtocol/PomodoroTimer.tsx`): a 25-minute countdown that
-  starts/pauses on tap, with a cancel (×) once a session is running. Only a session that runs all the
-  way to zero counts — pausing keeps your progress, but cancelling discards it, same
-  honesty-over-convenience spirit as Honor Code. A completed session logs its minutes to
-  `UserState.dailyFocusMinutes` and marks today active in `growthDates`, so focus time feeds the
-  streak exactly the way a logged loop does. Below the header, six color-theme swatches
+  the **Focus Timer** badge: tapping it opens **Focus Session**
+  (`components/GrowthProtocol/FocusSession.tsx`), a full-screen timer with a small reactive character
+  (`FocusCharacter.tsx` — neutral idle, closed-eyed "concentrating" while running, a wink when paused,
+  a grin on completion) and an adjustable duration (5–120 minutes, 5-minute steps, default 25;
+  `lib/growth/useFocusTimer.ts`). Closing (×) just minimizes it — the countdown keeps running and the
+  header badge shows it live — "Cancel session" is the only way to actually discard progress. Only a
+  session that runs all the way to zero counts, same honesty-over-convenience spirit as Honor Code. A
+  completed session logs its minutes to `UserState.dailyFocusMinutes`, marks today active in
+  `growthDates` (so focus time feeds the streak exactly the way a logged loop does), and pays out
+  `UserState.bits` at 1 bit per minute, shown on a "+N BITS" screen with the running total. Below the
+  header, six color-theme swatches
   (`lib/growth/themes.ts`) recolor the streak badge, the "Growth Objective" label, and the heatmap
   together — pick one to represent whatever this objective is, so a different goal can look different.
 - **Contamination Tracker** — self-reported usage across four categories: YouTube, Twitch, and X
@@ -121,7 +126,7 @@ responsive classes give for free.
 ```
 UserState: { defaultKpi, websiteUrl?, growthObjective?, heatmapTheme?, streak, growthDates[], dailyUvs,
              dailyGrowthActions, dailyInfrastructureFocus, dailyShipped, dailyShipNote?, journalEntries?,
-             screenTimeLog?, dailyFocusMinutes?, skills?, stats, achievements[], currentUvs,
+             screenTimeLog?, dailyFocusMinutes?, bits?, skills?, stats, achievements[], currentUvs,
              isOnMaintenance, minThreshold }
 ```
 
