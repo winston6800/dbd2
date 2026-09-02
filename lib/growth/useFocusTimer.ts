@@ -29,19 +29,24 @@ export function useFocusTimer(onComplete: (minutes: number) => void) {
   useEffect(() => {
     if (status !== 'running') return;
     const id = setInterval(() => {
-      setSecondsLeft(prev => {
-        if (prev <= 1) {
-          const minutes = durationRef.current;
-          setStatus('idle');
-          setJustCompleted(minutes);
-          onCompleteRef.current(minutes);
-          return minutes * 60;
-        }
-        return prev - 1;
-      });
+      setSecondsLeft(prev => Math.max(0, prev - 1));
     }, 1000);
     return () => clearInterval(id);
   }, [status]);
+
+  // Completion is a separate effect, not folded into the interval's own
+  // setState updater above — calling onComplete (which updates UserState on
+  // a parent component) from inside another component's updater function
+  // triggers React's "Cannot update a component while rendering a different
+  // component" warning, and risks the update being dropped.
+  useEffect(() => {
+    if (status !== 'running' || secondsLeft > 0) return;
+    const minutes = durationRef.current;
+    setStatus('idle');
+    setJustCompleted(minutes);
+    onCompleteRef.current(minutes);
+    setSecondsLeft(minutes * 60);
+  }, [status, secondsLeft]);
 
   const start = () => {
     setJustCompleted(null);
