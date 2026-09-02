@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Scratch dev-preview harness (created/deleted throughout local sessions to
+# render the app outside the auth/paywall gates for screenshotting).
+preview-journal.html
+preview-journal.tsx
