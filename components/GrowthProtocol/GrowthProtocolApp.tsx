@@ -564,7 +564,7 @@ const BaseHub: React.FC<{
   const [showLogConfirm, setShowLogConfirm] = useState(false);
   const [shipNote, setShipNote] = useState('');
   const [showBreakConfirm, setShowBreakConfirm] = useState(false);
-  const [showFocusModal, setShowFocusModal] = useState(false);
+  const [terminalMode, setTerminalMode] = useState<'counter' | 'focus'>('counter');
   const focusTimer = useFocusTimer(onLogFocusSession);
   const [isEditingWebsite, setIsEditingWebsite] = useState(false);
   const [isEditingObjective, setIsEditingObjective] = useState(false);
@@ -726,18 +726,29 @@ const BaseHub: React.FC<{
       <div className={`bg-gradient-to-br from-dark-accent to-black p-6 rounded-[32px] text-center space-y-6 border border-brand/20 shadow-2xl transition-all duration-500 ${userState.isOnMaintenance ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
         <div className="flex justify-between items-center">
           <h3 className="text-white font-black text-xl italic uppercase tracking-tighter">Growth Terminal</h3>
-          <button
-            onClick={() => setShowFocusModal(true)}
-            className="flex items-center space-x-1.5 bg-black px-3 py-1.5 rounded-full border border-brand/30 hover:border-brand/60 transition-colors"
-            title="Open focus timer"
-          >
-            <Timer size={12} className={`text-brand ${focusTimer.status !== 'idle' ? 'animate-pulse' : ''}`} />
-            <span className="text-[10px] font-black text-brand tabular-nums">
-              {focusTimer.status !== 'idle'
-                ? formatClock(focusTimer.secondsLeft)
-                : todayFocusMinutes > 0 ? `${formatMinutes(todayFocusMinutes)} today` : 'Focus Timer'}
-            </span>
-          </button>
+          {terminalMode === 'counter' ? (
+            <button
+              onClick={() => setTerminalMode('focus')}
+              className="flex items-center space-x-1.5 bg-black px-3 py-1.5 rounded-full border border-brand/30 hover:border-brand/60 transition-colors"
+              title="Switch to focus mode"
+            >
+              <Timer size={12} className={`text-brand ${focusTimer.status !== 'idle' ? 'animate-pulse' : ''}`} />
+              <span className="text-[10px] font-black text-brand tabular-nums">
+                {focusTimer.status !== 'idle'
+                  ? formatClock(focusTimer.secondsLeft)
+                  : todayFocusMinutes > 0 ? `${formatMinutes(todayFocusMinutes)} today` : 'Focus Timer'}
+              </span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setTerminalMode('counter')}
+              className="flex items-center space-x-1.5 bg-black px-3 py-1.5 rounded-full border border-brand/30 hover:border-brand/60 transition-colors"
+              title="Switch back to the loop counter"
+            >
+              <Terminal size={12} className="text-brand" />
+              <span className="text-[10px] font-black text-brand">Counter</span>
+            </button>
+          )}
         </div>
 
         <div className="flex items-center justify-center space-x-2">
@@ -752,40 +763,51 @@ const BaseHub: React.FC<{
           ))}
         </div>
 
-        <div className="flex flex-col items-center space-y-4">
-          <div className="flex items-center justify-center space-x-6 bg-black/60 p-4 rounded-3xl border border-white/5 w-full">
-             <button
-              onClick={() => onUpdateLoops(-1)}
-              className="w-12 h-12 rounded-2xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand hover:bg-brand/20 active:scale-90 transition-all"
-             >
-               <Minus size={20} />
-             </button>
+        {terminalMode === 'counter' ? (
+          <div key="counter" className="flex flex-col items-center space-y-4 animate-mode-in">
+            <div className="flex items-center justify-center space-x-6 bg-black/60 p-4 rounded-3xl border border-white/5 w-full">
+               <button
+                onClick={() => onUpdateLoops(-1)}
+                className="w-12 h-12 rounded-2xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand hover:bg-brand/20 active:scale-90 transition-all"
+               >
+                 <Minus size={20} />
+               </button>
 
-             <div className="flex flex-col items-center">
-                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">LOOPS TODAY</span>
-                <span className="text-4xl font-black italic text-white tracking-tighter tabular-nums">{todayLoops}</span>
-             </div>
+               <div className="flex flex-col items-center">
+                  <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">LOOPS TODAY</span>
+                  <span className="text-4xl font-black italic text-white tracking-tighter tabular-nums">{todayLoops}</span>
+               </div>
 
-             <button
-              onClick={() => onUpdateLoops(1)}
-              className="w-12 h-12 rounded-2xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand hover:bg-brand/20 active:scale-90 transition-all"
-             >
-               <Plus size={20} />
-             </button>
+               <button
+                onClick={() => onUpdateLoops(1)}
+                className="w-12 h-12 rounded-2xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand hover:bg-brand/20 active:scale-90 transition-all"
+               >
+                 <Plus size={20} />
+               </button>
+            </div>
+
+            <button
+              className={`w-full py-6 rounded-2xl font-black uppercase tracking-widest border transition-all flex items-center justify-center space-x-3 shadow-xl active:scale-95 ${todayShipped ? 'bg-orange-600 border-orange-400 text-white' : 'bg-brand border-brand/30 text-white hover:bg-brand-dark'}`}
+              onClick={() => setShowLogConfirm(true)}
+            >
+              {todayShipped ? <CheckCircle size={24} /> : <ShieldCheck size={24} />}
+              <span className="text-lg">{todayShipped ? 'Honor Code Kept' : 'Honor Code Entry'}</span>
+            </button>
+            <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest flex items-center justify-center space-x-1 italic">
+              <span>Did you ship something</span>
+              <ArrowUp size={12} strokeWidth={3} className="text-brand" />
+            </p>
           </div>
-
-          <button
-            className={`w-full py-6 rounded-2xl font-black uppercase tracking-widest border transition-all flex items-center justify-center space-x-3 shadow-xl active:scale-95 ${todayShipped ? 'bg-orange-600 border-orange-400 text-white' : 'bg-brand border-brand/30 text-white hover:bg-brand-dark'}`}
-            onClick={() => setShowLogConfirm(true)}
-          >
-            {todayShipped ? <CheckCircle size={24} /> : <ShieldCheck size={24} />}
-            <span className="text-lg">{todayShipped ? 'Honor Code Kept' : 'Honor Code Entry'}</span>
-          </button>
-          <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest flex items-center justify-center space-x-1 italic">
-            <span>Did you ship something</span>
-            <ArrowUp size={12} strokeWidth={3} className="text-brand" />
-          </p>
-        </div>
+        ) : (
+          <div key="focus" className="animate-mode-in">
+            <FocusSession
+              timer={focusTimer}
+              todayFocusMinutes={todayFocusMinutes}
+              totalBits={userState.bits || 0}
+              onBackToCounter={() => setTerminalMode('counter')}
+            />
+          </div>
+        )}
       </div>
 
       <ContaminationTracker userState={userState} onLog={onLogScreenTime} onUndo={onUndoScreenTime} />
@@ -866,15 +888,6 @@ const BaseHub: React.FC<{
             </div>
           </div>
         </div>
-      )}
-
-      {showFocusModal && (
-        <FocusSession
-          timer={focusTimer}
-          todayFocusMinutes={todayFocusMinutes}
-          totalBits={userState.bits || 0}
-          onClose={() => setShowFocusModal(false)}
-        />
       )}
     </div>
   );
