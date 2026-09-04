@@ -29,7 +29,7 @@ import { fetchRemoteState, saveRemoteState, mergeRemoteState } from '../../lib/g
 import { track } from '../../lib/analytics';
 import { useAuth } from '../../lib/auth';
 import { RefreshCw, X, Flame, Calendar, ShieldCheck, Target, Terminal, Plus, Minus, BarChart3, TrendingUp, CheckCircle, Trash2, History, Check, Skull, Coffee, Moon, ArrowUp, Edit3, Globe, UserPlus, Copy, Heart, Timer } from 'lucide-react';
-import { HEATMAP_THEMES, getHeatmapTheme, rgbCss } from '../../lib/growth/themes';
+import { getHeatmapTheme, rgbCss } from '../../lib/growth/themes';
 
 function formatMinutes(totalMinutes: number): string {
   if (totalMinutes < 60) return `${totalMinutes}m`;
@@ -276,10 +276,6 @@ export const GrowthProtocolApp: React.FC = () => {
     setUserState(prev => ({ ...prev, growthObjective: objective }));
   };
 
-  const updateHeatmapTheme = (themeId: string) => {
-    setUserState(prev => ({ ...prev, heatmapTheme: themeId }));
-  };
-
   const saveJournalEntry = (date: string, text: string) => {
     setUserState(prev => {
       const entries = { ...prev.journalEntries };
@@ -387,7 +383,6 @@ export const GrowthProtocolApp: React.FC = () => {
             onSetHonorVow={handleSetHonorVow}
             onUpdateWebsite={updateWebsite}
             onUpdateObjective={updateGrowthObjective}
-            onUpdateTheme={updateHeatmapTheme}
             onLogScreenTime={logScreenTime}
             onUndoScreenTime={undoScreenTime}
             onLogFocusSession={logFocusSession}
@@ -555,12 +550,11 @@ const BaseHub: React.FC<{
   onSetHonorVow: (shipped: boolean, note?: string) => void,
   onUpdateWebsite: (url: string) => void,
   onUpdateObjective: (obj: string) => void,
-  onUpdateTheme: (themeId: string) => void,
   onToggleInfra: (active: boolean) => void,
   onLogScreenTime: (platform: ScreenTimePlatform) => void,
   onUndoScreenTime: (platform: ScreenTimePlatform) => void,
   onLogFocusSession: (minutes: number) => void
-}> = ({ userState, onUpdateLoops, onSetHonorVow, onUpdateWebsite, onUpdateObjective, onUpdateTheme, onToggleInfra, onLogScreenTime, onUndoScreenTime, onLogFocusSession }) => {
+}> = ({ userState, onUpdateLoops, onSetHonorVow, onUpdateWebsite, onUpdateObjective, onToggleInfra, onLogScreenTime, onUndoScreenTime, onLogFocusSession }) => {
   const [showLogConfirm, setShowLogConfirm] = useState(false);
   const [shipNote, setShipNote] = useState('');
   const [showBreakConfirm, setShowBreakConfirm] = useState(false);
@@ -606,7 +600,7 @@ const BaseHub: React.FC<{
     setIsEditingObjective(false);
   };
 
-  const theme = getHeatmapTheme(userState.heatmapTheme);
+  const theme = getHeatmapTheme(undefined); // no more per-user color picker — always the one default theme
   const themeColor = rgbCss(theme.rgb);
   const objectiveLabel = userState.isOnMaintenance ? 'Break Day' : (userState.growthObjective || 'INCREASE DAILY UNIQUE VISITORS');
   const todayFocusMinutes = userState.dailyFocusMinutes?.[todayStr] || 0;
@@ -664,6 +658,7 @@ const BaseHub: React.FC<{
                 <span className="text-[8px] font-black uppercase text-gray-600" style={d.isToday ? { color: themeColor } : undefined}>{d.label}</span>
                 <div
                   className={`w-full aspect-square rounded-lg transition-all duration-300 flex items-center justify-center relative overflow-hidden ${d.isToday ? 'animate-pulse-slow' : ''}`}
+                  title={objectiveLabel}
                   style={{
                     ...getHeatmapColor(d.uvs, d.isFocus, d.isShipped, theme.rgb),
                     ...(d.isToday ? { boxShadow: `0 0 0 2px ${themeColor}, 0 0 15px ${themeColor}` } : {}),
@@ -725,7 +720,7 @@ const BaseHub: React.FC<{
 
       <div className={`bg-gradient-to-br from-dark-accent to-black p-6 rounded-[32px] text-center space-y-6 border border-brand/20 shadow-2xl transition-all duration-500 ${userState.isOnMaintenance ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
         <div className="flex justify-between items-center">
-          <h3 className="text-white font-black text-xl italic uppercase tracking-tighter">Growth Terminal</h3>
+          <h3 className="text-white font-black text-xl italic uppercase tracking-tighter">Volume</h3>
           {terminalMode === 'counter' ? (
             <button
               onClick={() => setTerminalMode('focus')}
@@ -749,18 +744,6 @@ const BaseHub: React.FC<{
               <span className="text-[10px] font-black text-brand">Counter</span>
             </button>
           )}
-        </div>
-
-        <div className="flex items-center justify-center space-x-2">
-          {HEATMAP_THEMES.map(t => (
-            <button
-              key={t.id}
-              onClick={() => onUpdateTheme(t.id)}
-              title={t.label}
-              className={`w-4 h-4 rounded-full border-2 transition-transform hover:scale-125 ${theme.id === t.id ? 'border-white scale-125' : 'border-white/20'}`}
-              style={{ backgroundColor: rgbCss(t.rgb) }}
-            />
-          ))}
         </div>
 
         {terminalMode === 'counter' ? (
@@ -973,7 +956,7 @@ const CapacityJournal: React.FC<{ userState: UserState; onSaveEntry: (date: stri
 
 const ProfileScreen: React.FC<{ userId: string | null | undefined; userState: UserState }> = ({ userId, userState }) => {
   type TimeFrame = 'WEEK' | 'MONTH' | 'YEAR' | 'ALL';
-  const theme = getHeatmapTheme(userState.heatmapTheme);
+  const theme = getHeatmapTheme(undefined); // no more per-user color picker — always the one default theme
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('MONTH');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [displayName, setDisplayNameState] = useState(() => getDisplayName(userId));

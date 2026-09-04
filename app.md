@@ -33,10 +33,15 @@ The daily loop, and where every session starts.
 
 - **Growth Objective + Survival Pulse** — one combined card. An editable one-line goal (e.g.
   "INCREASE DAILY UNIQUE VISITORS", click to edit) sits above a 7-day heatmap; color interpolates
-  from the chosen theme color at low volume to white-hot at high volume, with a checkmark overlay on
-  days the Honor Code was kept and today's cell ringed in the theme color. Hovering the card shows the
+  from brand red at low volume to white-hot at high volume, with a checkmark overlay on days the
+  Honor Code was kept and today's cell ringed in red. There's no per-objective color picker anymore —
+  one color for everyone, everywhere, and there used to be a six-swatch theme picker on this card
+  (`lib/growth/themes.ts`); `getHeatmapTheme` is still called, just always with `undefined`, so it
+  falls back to the single default (`themes.ts`'s `HEATMAP_THEMES[0]`) rather than reading
+  `UserState.heatmapTheme` (that field still exists on old data, it's just never read or written
+  anymore). Hovering any individual day cell in the heatmap (not just the card generally) shows the
   objective name as a tooltip. An optional website link sits below the heatmap.
-- **Growth Terminal** — +/- buttons logging today's loop count, and the **Honor Code Entry** button:
+- **Volume** — +/- buttons logging today's loop count, and the **Honor Code Entry** button:
   a confirmation modal asking whether the user actually shipped something today, with an optional
   note. Marking it kept (or later revoking it) recalculates the streak immediately. Its header toggles
   the whole card between two modes, Counter and Focus (`terminalMode` state in `BaseHub`) — tapping the
@@ -56,10 +61,7 @@ The daily loop, and where every session starts.
   `UserState.dailyFocusMinutes`, marks today active in `growthDates` (so focus time feeds the streak
   exactly the way a logged loop does), and pays out `UserState.bits` at 1 bit per minute, shown on a
   "+N BITS" screen with the running total before returning to Counter mode. Bits sync across devices
-  the same way the rest of `UserState` does (see State below) — no separate table needed. Below the
-  header, six color-theme swatches
-  (`lib/growth/themes.ts`) recolor the streak badge, the "Growth Objective" label, and the heatmap
-  together — pick one to represent whatever this objective is, so a different goal can look different.
+  the same way the rest of `UserState` does (see State below) — no separate table needed.
 - **Contamination Tracker** — self-reported usage across four categories: YouTube, Twitch, and X
   (tap logs an hour) plus a fourth, unlabeled category — a skull icon, no caption, no named tooltip —
   for pornography, tracked by uses rather than hours since count is the meaningful number there. It's
